@@ -1,0 +1,268 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>神厨冰箱</title>
+<style>
+:root{--ink:#1b1b2f;--bg:#fff8e7;--g:#3ec43e;--y:#ffcc00;--o:#ff8a00;--r:#e8343a;--gr:#9a9aaa;--blue:#3a7bd5}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:#2b2d5a;color:var(--ink);font-family:"Noto Sans CJK SC","Noto Sans SC","PingFang SC","Microsoft YaHei",monospace;font-weight:700}
+body{background-image:linear-gradient(45deg,#2f3166 25%,transparent 25%,transparent 75%,#2f3166 75%),linear-gradient(45deg,#2f3166 25%,transparent 25%,transparent 75%,#2f3166 75%);background-size:16px 16px;background-position:0 0,8px 8px;min-height:100vh}
+#app{max-width:520px;margin:0 auto;min-height:100vh;background:var(--bg);box-shadow:0 0 0 4px var(--ink);padding-bottom:96px;position:relative}
+.px{border:4px solid var(--ink);box-shadow:4px 4px 0 var(--ink)}
+button{font:inherit;color:inherit;cursor:pointer;border:4px solid var(--ink);background:#fff;box-shadow:4px 4px 0 var(--ink);padding:10px 14px;font-size:17px;min-height:48px}
+button:active{transform:translate(4px,4px);box-shadow:none}
+header{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--ink);color:#fff}
+header h1{margin:0;font-size:20px;letter-spacing:2px;flex:1}
+header .d{font-size:13px;color:var(--y)}
+.back{background:var(--y);min-height:40px;padding:4px 12px;font-size:16px;box-shadow:3px 3px 0 #000;border-color:#000;color:var(--ink)}
+main{padding:14px}
+.alert{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.alert button{display:flex;flex-direction:column;align-items:center;padding:8px 4px;font-size:14px}
+.alert b{font-size:28px;line-height:1.1}
+.a-red{background:#ffd6d6}.a-or{background:#ffe7c2}.a-gr{background:#e4e4ea}
+.a-zero{opacity:.45}
+.todo{background:var(--y);padding:10px 12px;margin-bottom:14px;font-size:16px}
+/* fridge */
+.scene{display:flex;gap:14px;justify-content:center;align-items:flex-end;margin:6px 0 4px}
+.fridge{width:200px;background:#dfe9f2;padding:6px;border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);position:relative}
+.door{position:relative;display:block;width:100%;background:#f4f8fb;border:4px solid var(--ink);box-shadow:inset -8px -8px 0 #c6d4e0,inset 6px 6px 0 #fff;text-align:left;padding:12px 10px;transform-origin:left center;transition:transform .45s steps(6);margin:0}
+.door:active{transform:none;box-shadow:inset -8px -8px 0 #c6d4e0}
+.door.open{transform:perspective(500px) rotateY(-75deg)}
+.door .lbl{font-size:20px;display:block}.door .n{font-size:14px;color:#556}
+.door .handle{position:absolute;right:12px;top:50%;width:10px;height:40px;margin-top:-20px;background:var(--gr);border:3px solid var(--ink)}
+.d-frz{height:120px;margin-bottom:6px}.d-frz .lbl{color:var(--blue)}
+.d-cold{height:200px}.d-cold .lbl{color:#178a5a}
+.feet{display:flex;justify-content:space-between;padding:0 14px}.feet i{width:20px;height:10px;background:var(--ink)}
+.shelf{width:130px;background:#c98b4a;border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:8px;text-align:center;box-shadow:inset 0 -6px 0 #9a6430,6px 6px 0 var(--ink)}
+.shelf .lbl{font-size:20px;color:#fff;text-shadow:2px 2px 0 var(--ink)}
+.shelf .n{font-size:14px;color:#fff3}
+.shelf .rows i{display:block;height:8px;background:#7a4a20;margin:30px 0 0}
+.shelf .n{color:#fff}
+.dot{display:inline-block;min-width:22px;padding:0 4px;text-align:center;background:var(--r);color:#fff;font-size:13px;border:2px solid var(--ink);margin-left:4px}
+.hint{text-align:center;color:#667;font-size:14px;margin:14px 0 0}
+/* tabs */
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.tabs button{padding:8px 2px;font-size:17px}
+.tabs .on{background:var(--ink);color:#fff}
+.sec{font-size:16px;margin:16px 0 8px;padding:4px 10px;background:var(--ink);color:#fff;display:inline-block}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 8px;margin-bottom:6px}
+.chips button{flex:none;padding:4px 10px;min-height:38px;font-size:15px;box-shadow:3px 3px 0 var(--ink);border-width:3px}
+.chips .on{background:var(--y)}
+.row{display:flex;align-items:center;gap:10px;background:#fff;padding:8px;margin-bottom:10px;border:4px solid var(--ink);box-shadow:4px 4px 0 var(--ink)}
+.row.out{opacity:.55;background:#eee}
+.row .ico{width:48px;height:48px;flex:none;border:3px solid var(--ink);background:#fff}
+.row .mid{flex:1;min-width:0}
+.row .nm{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .sub{font-size:12px;color:#556;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st{display:inline-block;font-size:12px;padding:1px 6px;border:2px solid var(--ink);margin-top:3px}
+.s-ok{background:#b8f0b8}.s-soon{background:var(--y)}.s-past{background:var(--o)}.s-bad{background:var(--r);color:#fff}.s-out{background:#bbb}.s-low{background:#ffe7c2}
+.tag{display:inline-block;font-size:11px;padding:0 4px;margin:3px 0 0 3px;border:2px solid var(--r);color:var(--r);background:#fff}
+.step{display:flex;align-items:center;gap:4px;flex:none}
+.step button{width:44px;height:44px;min-height:44px;padding:0;font-size:24px;line-height:1;box-shadow:3px 3px 0 var(--ink);border-width:3px}
+.step .q{min-width:34px;text-align:center;font-size:18px}
+.step .u{display:block;font-size:10px;color:#667;font-weight:400}
+/* nav */
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--ink);padding:8px;gap:8px;z-index:5}
+nav button{font-size:15px;padding:4px 2px;min-height:56px;border-color:#000;box-shadow:3px 3px 0 #000;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2}
+nav button span{font-size:22px}
+nav .on{background:var(--y)}
+nav .big{background:var(--g)}
+/* detail */
+.card{background:#fff;padding:14px;margin-bottom:14px}
+.hero{display:flex;gap:14px;align-items:center}
+.hero canvas{width:96px;height:96px;border:4px solid var(--ink);flex:none}
+.hero h2{margin:0;font-size:22px}.hero .o{font-size:13px;color:#667;font-weight:400;margin-top:4px}
+.big-st{font-size:20px;padding:10px;text-align:center;margin:14px 0 0}
+.kv{display:grid;grid-template-columns:5.5em 1fr;gap:8px 8px;font-size:15px;margin-top:12px}.kv div:nth-child(odd){color:#667}
+.kv div:nth-child(even){font-weight:400}
+details{margin-top:12px;border:3px solid var(--ink);padding:8px}
+summary{font-size:15px;cursor:pointer}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.primary{background:var(--g);width:100%;font-size:19px}
+.danger{background:#ffd6d6}
+.note{font-size:12px;color:#778;font-weight:400;margin-top:10px}
+/* form */
+label{display:block;font-size:15px;margin:10px 0 4px}
+input,select,textarea{font:inherit;font-size:17px;width:100%;padding:10px;border:4px solid var(--ink);background:#fff;font-weight:400;border-radius:0}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.check{display:flex;gap:8px;align-items:center;font-size:16px;margin:12px 0}.check input{width:24px;height:24px}
+.toast{position:fixed;left:50%;top:20px;transform:translateX(-50%);background:var(--ink);color:var(--y);padding:12px 18px;z-index:9;border:4px solid var(--y);font-size:16px}
+.empty{text-align:center;color:#667;padding:24px;font-size:16px}
+.blink{animation:bl 1s steps(2) infinite}@keyframes bl{50%{opacity:.3}}
+@media(min-width:900px){#app{max-width:560px}nav{max-width:560px}}
+</style></head><body><div id="app"></div>
+<script>
+const EMBED={"version":"2026-10-10.1","updated":"2026-10-10","rules":{"frozen_meat":{"u":[120,180],"o":[120,180],"t":"冷冻生肉 3–6 个月"},"frozen_sea":{"u":[60,90],"o":[60,90],"t":"冷冻海鲜约 3 个月"},"frozen_proc":{"u":[90,180],"o":[60,120],"t":"冷冻半成品 3–6 个月"},"egg":{"u":[21,35],"o":[21,35],"t":"冷藏鸡蛋 3–5 周"},"milk":{"u":[20,30],"o":[3,5],"t":"未开封按包装；开封 3–5 天"},"cheese":{"u":[30,60],"o":[21,28],"t":"开封奶酪 3–4 周"},"salad":{"u":[30,45],"o":[3,5],"t":"冷藏沙拉开封 3–5 天"},"pickle":{"u":[365,730],"o":[14,30],"t":"罐头未开 1–2 年；开封冷藏 2–4 周"},"ground":{"u":[270,730],"o":[180,540],"t":"香料粉 1–2 年，半年后变淡"},"whole":{"u":[730,1095],"o":[365,1095],"t":"整粒香料 2–3 年"},"herb":{"u":[365,730],"o":[180,365],"t":"干香草 6–12 个月最香"},"blend":{"u":[270,540],"o":[180,365],"t":"复合调味粉 6–12 个月"},"soy":{"u":[540,730],"o":[180,365],"t":"酱油开封约 6 个月"},"vinegar":{"u":[730,1095],"o":[365,730],"t":"醋很耐放"},"oil":{"u":[365,540],"o":[90,180],"t":"开封油 3–6 个月"},"wine":{"u":[730,1095],"o":[180,365],"t":"料酒开封约半年"},"sauce":{"u":[365,540],"o":[60,180],"t":"开封酱料冷藏 2–6 个月"},"ketchup":{"u":[365,540],"o":[30,60],"t":"开封番茄酱冷藏 1–2 个月"},"oyster":{"u":[365,540],"o":[60,90],"t":"开封蚝油冷藏 2–3 个月"},"honey":{"u":[730,1825],"o":[730,1825],"t":"蜂蜜几乎不坏"},"sugar":{"u":[730,1825],"o":[730,1825],"t":"糖/淀粉密封很耐放"},"hotpot":{"u":[270,365],"o":[30,60],"t":"未开 9–12 个月；开封冷藏 1–2 个月"},"block":{"u":[270,365],"o":[60,90],"t":"咖喱块/汤料包 9–12 个月"},"noodle":{"u":[270,365],"o":[180,365],"t":"干面条约 1 年"},"rice":{"u":[180,365],"o":[180,365],"t":"大米 6–12 个月，防潮防虫"},"dryveg":{"u":[365,730],"o":[365,730],"t":"粉丝宽粉 1–2 年"},"instant":{"u":[120,180],"o":[120,180],"t":"方便面 4–6 个月"},"rootveg":{"u":[14,28],"o":[14,28],"t":"土豆洋葱阴凉处 2–4 周"},"radish":{"u":[10,14],"o":[10,14],"t":"萝卜冷藏约 2 周"},"mushroom":{"u":[3,7],"o":[3,7],"t":"鲜蘑菇冷藏 3–7 天"},"deli":{"u":[3,5],"o":[3,5],"t":"熟食冷藏 3–5 天"}},"items":[{"name":"普罗旺斯香草碎","orig":"Maggi Прованские травы","zone":"常温","kind":"调料","group":"香草","style":"法式/意式烤菜、番茄意面","taste":"清香草本，略带薄荷感","sprite":"leaf","c1":"#4f9a3a","c2":"#2f6b25","rule":"herb","qty":1,"unit":"包","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":296.0,"p":9.7,"f":7.3,"c":39.0},"id":"i00"},{"name":"十三香","orig":"王守义十三香","zone":"常温","kind":"调料","group":"辛香料","style":"中式炖肉、饺子馅、小龙虾","taste":"浓郁五香，微苦回甘","sprite":"bag","c1":"#c8442c","c2":"#f2c14e","rule":"ground","qty":1,"unit":"盒","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":398.0,"p":9.0,"f":8.4,"c":70.8},"id":"i01"},{"name":"麻辣鲜","orig":"王守义麻辣鲜调味料","zone":"常温","kind":"调料","group":"麻","style":"川味炒菜、凉拌、烧烤","taste":"又麻又辣带鲜味","sprite":"bag","c1":"#d93a2b","c2":"#7a2a14","rule":"blend","qty":1,"unit":"袋","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":180.0,"p":7.5,"f":3.8,"c":28.5},"id":"i02"},{"name":"格鲁吉亚香草粉","orig":"Хмели-сунели","zone":"常温","kind":"调料","group":"香草","style":"格鲁吉亚炖菜、炖肉、汤","taste":"胡芦巴坚果香＋香草味","sprite":"leaf","c1":"#8a9a3a","c2":"#5a6b25","rule":"herb","qty":1,"unit":"包","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":280.0,"p":12.0,"f":14.0,"c":26.0},"id":"i03"},{"name":"肉桂粉","orig":"Корица молотая","zone":"常温","kind":"调料","group":"辛香料","style":"西式甜点、烤苹果、咖啡","taste":"甜暖木香","sprite":"powder","c1":"#9a5a2a","c2":"#d9a066","rule":"ground","qty":1,"unit":"包","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":190.0,"p":8.5,"f":7.0,"c":31.0},"id":"i04"},{"name":"肉豆蔻粉","orig":"Мускатный орех молотый","zone":"常温","kind":"调料","group":"辛香料","style":"奶油白酱、土豆泥、肉馅","taste":"温暖坚果香，微辛","sprite":"powder","c1":"#b0784a","c2":"#6b4426","rule":"ground","qty":1,"unit":"包","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":460.0,"p":5.5,"f":36.0,"c":28.5},"id":"i05"},{"name":"混合胡椒粉","orig":"Cykoria Приправа из смеси перцев","zone":"常温","kind":"调料","group":"辛香料","style":"西式煎肉、意面、腌肉","taste":"多层次胡椒辛香，微辣","sprite":"powder","c1":"#555555","c2":"#c8442c","rule":"ground","qty":1,"unit":"包","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":250.0,"p":10.0,"f":3.0,"c":60.0},"id":"i06"},{"name":"干蒜粒","orig":"Чеснок сушёный","zone":"常温","kind":"调料","group":"辛香料","style":"意面、烤肉、炒菜万能","taste":"浓蒜香，略甜","sprite":"garlic","c1":"#cfc6b0","c2":"#9a8a6a","rule":"ground","qty":1,"unit":"包","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":368.0,"p":16.0,"f":0.4,"c":75.0},"id":"i07"},{"name":"郫县豆瓣酱","orig":"郫县豆瓣酱","zone":"冷藏","kind":"调料","group":"辣","style":"川菜：回锅肉、麻婆豆腐","taste":"咸香微辣，发酵豆香","sprite":"jar","c1":"#b8321e","c2":"#f2c14e","rule":"sauce","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":182.0,"p":13.6,"f":6.8,"c":17.1},"id":"i08"},{"name":"海底捞牛油火锅底料","orig":"海底捞 牛油火锅底料","zone":"常温","kind":"调料","group":"复合调味","style":"麻辣火锅、冒菜、香锅","taste":"重麻重辣，牛油浓香","sprite":"box","c1":"#d93a2b","c2":"#f2c14e","rule":"hotpot","qty":1,"unit":"袋","opened":false,"low":false,"intake":"2026-10-08","tags":["高油"],"nut":{"kcal":690.0,"p":3.5,"f":75.0,"c":3.1},"id":"i09"},{"name":"黑胡椒粒 · Alvado","orig":"Alvado Перец черный целый","zone":"常温","kind":"调料","group":"辛香料","style":"西式牛排、黑椒汁、腌肉","taste":"辛辣木香，现磨最香","sprite":"pepper","c1":"#333333","c2":"#666666","rule":"whole","qty":1,"unit":"包","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":251.0,"p":10.4,"f":3.3,"c":64.0},"id":"i10"},{"name":"黑胡椒粒 · Cykoria","orig":"Cykoria Перец черный горошком","zone":"常温","kind":"调料","group":"辛香料","style":"西式牛排、黑椒汁、腌肉","taste":"辛辣木香，现磨最香","sprite":"pepper","c1":"#333333","c2":"#666666","rule":"whole","qty":1,"unit":"包","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":251.0,"p":10.4,"f":3.3,"c":64.0},"id":"i11"},{"name":"盐焗粉","orig":"加厨宝 简易盐焗粉","zone":"常温","kind":"调料","group":"咸鲜","style":"客家盐焗鸡、盐焗鸡翅","taste":"咸香带沙姜味","sprite":"packet","c1":"#e8b02a","c2":"#c8442c","rule":"blend","qty":1,"unit":"包","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":50.0,"p":2.0,"f":1.0,"c":10.0},"id":"i12"},{"name":"咖喱粉","orig":"Волшебное дерево Приправа «Карри»","zone":"常温","kind":"调料","group":"复合调味","style":"印式咖喱、咖喱炒饭","taste":"姜黄辛香，微辣","sprite":"powder","c1":"#e0a020","c2":"#9a6a10","rule":"ground","qty":1,"unit":"包","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":235.0,"p":6.5,"f":8.4,"c":33.3},"id":"i13"},{"name":"番茄酱汁 · ABC","orig":"ABC Соус томатный","zone":"冷藏","kind":"调料","group":"酸","style":"意面番茄酱、炖菜","taste":"番茄酸香，微甜","sprite":"bottle","c1":"#c8321e","c2":"#2a7a3a","rule":"ketchup","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":80.0,"p":0.0,"f":0.0,"c":20.0},"id":"i14"},{"name":"番茄沙司 · 亨氏","orig":"Heinz Томатный кетчуп","zone":"冷藏","kind":"调料","group":"甜","style":"蘸薯条、鸡块、糖醋菜","taste":"酸甜番茄味","sprite":"bottle","c1":"#d92b1e","c2":"#ffffff","rule":"ketchup","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":["含糖多"],"nut":{"kcal":95.0,"p":1.0,"f":0.1,"c":23.0},"id":"i15"},{"name":"美式黄芥末酱","orig":"Камако Соус горчичный американский","zone":"冷藏","kind":"调料","group":"酸","style":"热狗、汉堡、三明治","taste":"微酸微冲，不辣","sprite":"bottle","c1":"#e8c020","c2":"#c8442c","rule":"sauce","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":151.0,"p":2.5,"f":5.0,"c":24.0},"id":"i16"},{"name":"蜂蜜","orig":"Суседскі Маёнтак Мёд натуральный","zone":"常温","kind":"调料","group":"甜","style":"蜜汁鸡翅、烤肉上色、冲水","taste":"花香浓甜","sprite":"honey","c1":"#e8a020","c2":"#f2d060","rule":"honey","qty":1,"unit":"罐","opened":true,"low":false,"intake":"2026-10-08","tags":["含糖多"],"nut":{"kcal":294.0,"p":0.4,"f":0.0,"c":76.4},"id":"i17"},{"name":"土豆淀粉","orig":"如意 马铃薯淀粉","zone":"常温","kind":"调料","group":"勾芡/其他","style":"勾芡、上浆、炸物挂糊","taste":"无味，让汤汁变稠","sprite":"bag","c1":"#f0f0f0","c2":"#4a8ad9","rule":"sugar","qty":1,"unit":"袋","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":332.0,"p":0.1,"f":0.1,"c":82.0},"id":"i18"},{"name":"冰糖","orig":"单晶冰糖","zone":"常温","kind":"调料","group":"甜","style":"红烧肉、炖品、糖色","taste":"纯甜不腻","sprite":"sugar","c1":"#ffffff","c2":"#cfd8e8","rule":"sugar","qty":1,"unit":"袋","opened":true,"low":false,"intake":"2026-10-08","tags":["含糖多"],"nut":{"kcal":403.0,"p":0.0,"f":0.0,"c":99.3},"id":"i19"},{"name":"生抽 · 厨邦","orig":"厨邦 鲜味生抽","zone":"常温","kind":"调料","group":"咸鲜","style":"中式炒菜、凉拌、蘸料","taste":"咸鲜提味","sprite":"bottle","c1":"#6b3a1e","c2":"#e8c020","rule":"soy","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":20.0,"p":4.8,"f":0.1,"c":0.0},"id":"i20"},{"name":"老抽 · 味达美","orig":"味达美 冰糖老抽酱油","zone":"常温","kind":"调料","group":"咸鲜","style":"红烧上色、卤味","taste":"微甜，颜色深","sprite":"bottle","c1":"#2a1a10","c2":"#c8442c","rule":"soy","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":150.0,"p":8.0,"f":0.0,"c":28.7},"id":"i21"},{"name":"蚝油 · 厨邦","orig":"厨邦 渔女蚝油 / Устричный соус «Чубан»","zone":"冷藏","kind":"调料","group":"咸鲜","style":"粤式炒菜、蚝油生菜、腌肉","taste":"鲜甜浓郁","sprite":"bottle","c1":"#4a2a1a","c2":"#e8a020","rule":"oyster","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":["海鲜"],"nut":{"kcal":50.0,"p":2.8,"f":0.0,"c":8.9},"id":"i22"},{"name":"黄豆酱 · 海天","orig":"海天 招牌黄豆酱","zone":"冷藏","kind":"调料","group":"咸鲜","style":"炸酱面、酱焖、蘸酱","taste":"酱香浓，咸鲜","sprite":"jar","c1":"#a0702a","c2":"#e8c020","rule":"sauce","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":137.0,"p":9.3,"f":2.0,"c":16.7},"id":"i23"},{"name":"米醋 · 龙门","orig":"龙门 米醋","zone":"常温","kind":"调料","group":"酸","style":"糖醋、凉拌、饺子蘸料","taste":"柔和米香酸","sprite":"bottle","c1":"#e8d8a0","c2":"#c8442c","rule":"vinegar","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":31.0,"p":2.1,"f":0.3,"c":4.9},"id":"i24"},{"name":"料酒 · 王致和","orig":"王致和 料酒","zone":"常温","kind":"调料","group":"酒香","style":"中式去腥：鱼肉禽","taste":"淡酒香，去腥","sprite":"bottle","c1":"#c89a50","c2":"#c8442c","rule":"wine","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":["含酒精"],"nut":{"kcal":63.0,"p":0.0,"f":0.0,"c":0.0},"id":"i25"},{"name":"花雕酒 · 古越龙山","orig":"古越龙山 绍兴花雕酒","zone":"常温","kind":"调料","group":"酒香","style":"醉鸡、红烧、花雕蒸蟹","taste":"醇厚黄酒香","sprite":"bottle","c1":"#8a4a1e","c2":"#e8c020","rule":"wine","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":["含酒精"],"nut":{"kcal":96.0,"p":1.6,"f":0.0,"c":3.0},"id":"i26"},{"name":"葵花籽油 · Слобода","orig":"Слобода Масло подсолнечное","zone":"常温","kind":"调料","group":"油脂","style":"炒、煎、炸都行","taste":"清淡无怪味","sprite":"oil","c1":"#f2d040","c2":"#2a7a3a","rule":"oil","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":899.0,"p":0.0,"f":99.9,"c":0.0},"id":"i27"},{"name":"老干妈 · 鸡油辣椒","orig":"老干妈 风味鸡油辣椒","zone":"冷藏","kind":"调料","group":"辣","style":"拌饭、拌面、炒菜","taste":"香辣带鸡油香","sprite":"jar","c1":"#c8321e","c2":"#e8c020","rule":"sauce","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":["高油"],"nut":{"kcal":603.0,"p":10.8,"f":58.2,"c":6.7},"id":"i28"},{"name":"老干妈 · 牛肉豆豉","orig":"老干妈 精制牛肉末豆豉油辣椒","zone":"冷藏","kind":"调料","group":"辣","style":"拌饭、拌面、炒菜","taste":"香辣豆豉＋牛肉","sprite":"jar","c1":"#a0281a","c2":"#6b3a1e","rule":"sauce","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":["高油"],"nut":{"kcal":605.0,"p":10.2,"f":60.8,"c":6.4},"id":"i29"},{"name":"蒜蓉辣椒酱","orig":"珠江桥牌 蒜蓉辣椒酱","zone":"冷藏","kind":"调料","group":"辣","style":"蒸海鲜、蘸料、炒菜","taste":"蒜香甜辣","sprite":"bottle","c1":"#e0401e","c2":"#ffffff","rule":"sauce","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":96.0,"p":2.0,"f":0.0,"c":18.7},"id":"i30"},{"name":"腐乳","orig":"王致和 大块腐乳","zone":"冷藏","kind":"调料","group":"咸鲜","style":"腐乳肉、空心菜、火锅蘸料","taste":"咸鲜绵软，发酵香","sprite":"jar","c1":"#c87a50","c2":"#f2e0c0","rule":"sauce","qty":1,"unit":"瓶","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":172.0,"p":10.0,"f":10.0,"c":7.0},"id":"i31"},{"name":"日式咖喱块 · 百梦多","orig":"好侍百梦多咖喱块（原味）","zone":"常温","kind":"调料","group":"复合调味","style":"日式咖喱饭","taste":"温和微甜，奶香","sprite":"box","c1":"#e8a020","c2":"#c8321e","rule":"block","qty":1,"unit":"盒","opened":false,"low":false,"intake":"2026-10-08","tags":["高油"],"nut":{"kcal":518.0,"p":4.9,"f":33.9,"c":48.7},"id":"i32"},{"name":"越南牛肉粉汤料","orig":"Лапшуха суп Фо Бо","zone":"常温","kind":"调料","group":"复合调味","style":"越南河粉、牛肉汤面","taste":"八角肉桂牛骨汤香","sprite":"packet","c1":"#c8321e","c2":"#2a7a3a","rule":"block","qty":1,"unit":"包","opened":false,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":330.0,"p":6.0,"f":11.5,"c":35.0},"id":"i33"},{"name":"腌番茄","orig":"Суседскі Маёнтак Таматы марынаваныя","zone":"冷藏","kind":"食材","group":"腌菜罐头","style":"意面酱、炖菜、配菜","taste":"酸甜咸","sprite":"jar","c1":"#d93a2b","c2":"#3a8a2a","rule":"pickle","qty":1,"unit":"罐","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":20.0,"p":1.0,"f":0.1,"c":4.0},"id":"i34"},{"name":"无乳糖牛奶 3.2%","orig":"#МОЖНО Молоко безлактозное 3,2%","zone":"冷藏","kind":"食材","group":"蛋奶","style":"","taste":"","sprite":"milk","c1":"#4a8ad9","c2":"#ffffff","rule":"milk","qty":1,"unit":"盒","opened":false,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":60.0,"p":3.1,"f":3.2,"c":4.7},"id":"i35"},{"name":"鸡蛋","orig":"Солигорская Яйцо «Молодецкие» обогащённые йодом","zone":"冷藏","kind":"食材","group":"蛋奶","style":"","taste":"","sprite":"egg","c1":"#e8c89a","c2":"#ffffff","rule":"egg","qty":10,"unit":"个","opened":false,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":157.0,"p":12.7,"f":11.5,"c":0.7},"id":"i36"},{"name":"牛肚 · 波列西耶风味","orig":"Пикант Рубцы говяжьи по-полесски","zone":"冷藏","kind":"食材","group":"肉禽","style":"","taste":"","sprite":"beef","c1":"#e8d8b0","c2":"#b89a6a","rule":"deli","qty":0,"unit":"盒","opened":true,"low":false,"intake":"2026-10-08","tags":["内脏","嘌呤高"],"nut":{"kcal":110.0,"p":18.0,"f":4.0,"c":0.0},"id":"i37"},{"name":"海带丝沙拉","orig":"Санта Бремор Морская капуста «Классическая»","zone":"冷藏","kind":"食材","group":"腌菜罐头","style":"","taste":"","sprite":"jar","c1":"#3a6b2a","c2":"#c8e070","rule":"salad","qty":1,"unit":"盒","opened":false,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":42.0,"p":1.2,"f":0.9,"c":6.9},"id":"i38"},{"name":"奶酪丝","orig":"Брест-Литовск Сыр «Классический» тёртый","zone":"冷藏","kind":"食材","group":"蛋奶","style":"","taste":"","sprite":"cheese","c1":"#f2c440","c2":"#d9a020","rule":"cheese","qty":1,"unit":"袋","opened":true,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":340.0,"p":26.3,"f":26.1,"c":0.0},"id":"i39"},{"name":"鸡翅中","orig":"Галерея вкуса Мясо цыпленка (локтевая часть)","zone":"冷冻","kind":"食材","group":"肉禽","style":"","taste":"","sprite":"wing","c1":"#e8b070","c2":"#ffffff","rule":"frozen_meat","qty":1,"unit":"袋","opened":false,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":220.0,"p":17.2,"f":16.8,"c":0.0},"id":"i40"},{"name":"牛胸肉","orig":"Мясная держава Грудная часть «Минская новая»","zone":"冷冻","kind":"食材","group":"肉禽","style":"","taste":"","sprite":"beef","c1":"#c8443a","c2":"#ffffff","rule":"frozen_meat","qty":1,"unit":"块","opened":false,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":240.0,"p":16.0,"f":19.0,"c":0.0},"id":"i41"},{"name":"迷你香肠","orig":"Горячая штучка «Хотстеры»","zone":"冷冻","kind":"食材","group":"冷冻加工","style":"","taste":"","sprite":"sausage","c1":"#c87a3a","c2":"#f2c060","rule":"frozen_proc","qty":1,"unit":"袋","opened":true,"low":false,"intake":"2026-10-08","tags":["加工肉"],"nut":{"kcal":210.0,"p":7.0,"f":22.0,"c":17.0},"id":"i42"},{"name":"鸡块","orig":"Петруха &Готово Хрустящие наггетсы","zone":"冷冻","kind":"食材","group":"冷冻加工","style":"","taste":"","sprite":"nugget","c1":"#e0a040","c2":"#a06a20","rule":"frozen_proc","qty":1,"unit":"袋","opened":true,"low":false,"intake":"2026-10-08","tags":["加工肉"],"nut":{"kcal":220.0,"p":10.0,"f":12.0,"c":18.0},"id":"i43"},{"name":"冷冻海鲜什锦","orig":"Морской коктейль (кальмар, осьминог, мидии, креветки)","zone":"冷冻","kind":"食材","group":"海鲜","style":"","taste":"","sprite":"shrimp","c1":"#f07050","c2":"#ffffff","rule":"frozen_sea","qty":1,"unit":"袋","opened":true,"low":false,"intake":"2026-10-08","tags":["海鲜","嘌呤高"],"nut":{"kcal":99.0,"p":15.0,"f":2.2,"c":0.0},"id":"i44"},{"name":"腌黄瓜","orig":"Разносольников Огурчики «Домашние»","zone":"常温","kind":"食材","group":"腌菜罐头","style":"","taste":"","sprite":"jar","c1":"#4a8a2a","c2":"#c8e070","rule":"pickle","qty":1,"unit":"罐","opened":false,"low":false,"intake":"2026-10-08","tags":[],"nut":{"kcal":16.0,"p":0.0,"f":0.0,"c":4.0},"id":"i45"},{"name":"口蘑","orig":"Шампиньоны","zone":"冷藏","kind":"食材","group":"蔬菜","style":"","taste":"","sprite":"mushroom","c1":"#d8c8b0","c2":"#a08a6a","rule":"mushroom","qty":0,"unit":"盒","opened":true,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":22,"p":3.1,"f":0.3,"c":3.3,"est":true},"id":"i46"},{"name":"平菇","orig":"Вешенки","zone":"冷藏","kind":"食材","group":"蔬菜","style":"","taste":"","sprite":"mushroom","c1":"#b0a8a0","c2":"#706860","rule":"mushroom","qty":0,"unit":"盒","opened":true,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":33,"p":3.3,"f":0.4,"c":6,"est":true},"id":"i47"},{"name":"萝卜","orig":"Редька","zone":"冷藏","kind":"食材","group":"蔬菜","style":"","taste":"","sprite":"radish","c1":"#f4f4f4","c2":"#3a9a2a","rule":"radish","qty":1,"unit":"根","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":18,"p":0.7,"f":0.1,"c":4,"est":true},"id":"i48"},{"name":"洋葱","orig":"Лук репчатый","zone":"常温","kind":"食材","group":"蔬菜","style":"","taste":"","sprite":"onion","c1":"#c8803a","c2":"#e8c070","rule":"rootveg","qty":3,"unit":"个","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":40,"p":1.1,"f":0.1,"c":9,"est":true},"id":"i49"},{"name":"土豆","orig":"Картофель","zone":"常温","kind":"食材","group":"蔬菜","style":"","taste":"","sprite":"potato","c1":"#c8a060","c2":"#8a6a30","rule":"rootveg","qty":5,"unit":"个","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":77,"p":2,"f":0.1,"c":17,"est":true},"id":"i50"},{"name":"大米","orig":"Рис","zone":"常温","kind":"食材","group":"主食","style":"","taste":"","sprite":"rice","c1":"#e8e0c8","c2":"#c8442c","rule":"rice","qty":1,"unit":"袋","opened":true,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":346,"p":7.4,"f":0.8,"c":77.9,"est":true},"id":"i51"},{"name":"意大利面","orig":"Спагетти","zone":"常温","kind":"食材","group":"主食","style":"","taste":"","sprite":"noodle","c1":"#f2d070","c2":"#2a5ab0","rule":"noodle","qty":1,"unit":"包","opened":true,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":350,"p":12,"f":1.5,"c":71,"est":true},"id":"i52"},{"name":"桂皮","orig":"Корица (палочки)","zone":"常温","kind":"调料","group":"辛香料","style":"中式卤味、红烧、炖肉","taste":"甜暖木香","sprite":"stick","c1":"#9a5a2a","c2":"#6b3a1a","rule":"whole","qty":1,"unit":"袋","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":247,"p":4,"f":1.2,"c":80,"est":true},"id":"i53"},{"name":"奥尔良腌料","orig":"Маринад «Орлеан»","zone":"常温","kind":"调料","group":"复合调味","style":"烤鸡翅、烤鸡腿","taste":"甜辣微咸，烧烤香","sprite":"bag","c1":"#d9581e","c2":"#f2c14e","rule":"blend","qty":1,"unit":"袋(1kg)","opened":false,"low":false,"intake":"2026-10-10","tags":["含糖多"],"nut":{"kcal":250,"p":5,"f":2,"c":50,"est":true},"id":"i54"},{"name":"草果","orig":"Цаоко (кардамон)","zone":"常温","kind":"调料","group":"辛香料","style":"卤味、炖牛羊肉、火锅","taste":"浓烈辛香，去膻","sprite":"star","c1":"#6b3a1e","c2":"#a0602a","rule":"whole","qty":1,"unit":"袋","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":300,"p":7,"f":6,"c":60,"est":true},"id":"i55"},{"name":"孜然粒","orig":"Зира целая","zone":"常温","kind":"调料","group":"辛香料","style":"新疆烤串、孜然羊肉","taste":"浓郁烧烤香","sprite":"pepper","c1":"#8a6a3a","c2":"#b8945a","rule":"whole","qty":1,"unit":"袋","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":375,"p":18,"f":22,"c":44,"est":true},"id":"i56"},{"name":"孜然粉 · 老庞家","orig":"Зира молотая","zone":"常温","kind":"调料","group":"辛香料","style":"烤串、孜然炒肉","taste":"浓郁烧烤香","sprite":"powder","c1":"#8a6a3a","c2":"#e8c020","rule":"ground","qty":2,"unit":"包","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":375,"p":18,"f":22,"c":44,"est":true},"id":"i57"},{"name":"花椒面 · 老庞家","orig":"Сычуаньский перец молотый","zone":"常温","kind":"调料","group":"麻","style":"川菜、凉拌、撒烤串","taste":"麻嘴，木香","sprite":"powder","c1":"#a0401e","c2":"#e8c020","rule":"ground","qty":1,"unit":"包","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":300,"p":7,"f":9,"c":66,"est":true},"id":"i58"},{"name":"椒盐粉 · 老庞家","orig":"Соль с перцем","zone":"常温","kind":"调料","group":"咸鲜","style":"椒盐排骨、炸物蘸料","taste":"咸香微麻","sprite":"powder","c1":"#c8c8c8","c2":"#c8442c","rule":"blend","qty":1,"unit":"包","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":50,"p":2,"f":1,"c":8,"est":true},"id":"i59"},{"name":"青花椒（麻椒）","orig":"Зелёный сычуаньский перец","zone":"常温","kind":"调料","group":"麻","style":"藤椒鱼、麻辣香锅、油泼","taste":"强烈清麻，柑橘香","sprite":"pepper","c1":"#4a8a2a","c2":"#2a5a1a","rule":"whole","qty":1,"unit":"袋","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":300,"p":7,"f":9,"c":66,"est":true},"id":"i60"},{"name":"包心鱼丸 · 安井","orig":"Рыбные шарики","zone":"冷冻","kind":"食材","group":"海鲜","style":"","taste":"","sprite":"fishball","c1":"#f4f0e8","c2":"#c8b8a0","rule":"frozen_proc","qty":1,"unit":"袋","opened":false,"low":false,"intake":"2026-10-10","tags":["海鲜"],"nut":{"kcal":150,"p":8,"f":8,"c":12,"est":true},"id":"i61"},{"name":"鱼籽包 · 安井","orig":"Шарики с икрой","zone":"冷冻","kind":"食材","group":"海鲜","style":"","taste":"","sprite":"fishball","c1":"#f2a050","c2":"#e86030","rule":"frozen_proc","qty":1,"unit":"袋","opened":false,"low":false,"intake":"2026-10-10","tags":["海鲜","嘌呤高"],"nut":{"kcal":170,"p":9,"f":9,"c":14,"est":true},"id":"i62"},{"name":"鸡蛋挂面","orig":"Яичная лапша","zone":"常温","kind":"食材","group":"主食","style":"","taste":"","sprite":"noodle","c1":"#f2e090","c2":"#c8442c","rule":"noodle","qty":1,"unit":"袋(1kg)","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":350,"p":11,"f":1,"c":73,"est":true},"id":"i63"},{"name":"江西米粉","orig":"Рисовая лапша","zone":"常温","kind":"食材","group":"主食","style":"","taste":"","sprite":"noodle","c1":"#f8f8f0","c2":"#2a7a3a","rule":"noodle","qty":1,"unit":"袋(1kg)","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":346,"p":0.8,"f":0.5,"c":85,"est":true},"id":"i64"},{"name":"火锅宽粉","orig":"Широкая крахмальная лапша","zone":"常温","kind":"食材","group":"主食","style":"","taste":"","sprite":"noodle","c1":"#d8d0c0","c2":"#c8442c","rule":"dryveg","qty":1,"unit":"袋","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":340,"p":0.2,"f":0.1,"c":85,"est":true},"id":"i65"},{"name":"龙口粉丝","orig":"Фунчоза","zone":"常温","kind":"食材","group":"主食","style":"","taste":"","sprite":"noodle","c1":"#f0f4f8","c2":"#4a8ad9","rule":"dryveg","qty":1,"unit":"袋","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":338,"p":0.8,"f":0.2,"c":84,"est":true},"id":"i66"},{"name":"方便拉面（鸡汤＋卤蛋）","orig":"Лапша быстрого приготовления","zone":"常温","kind":"食材","group":"主食","style":"","taste":"","sprite":"cup","c1":"#e8c070","c2":"#c8442c","rule":"instant","qty":1,"unit":"份","opened":false,"low":false,"intake":"2026-10-10","tags":[],"nut":{"kcal":450,"p":9,"f":18,"c":62,"est":true},"id":"i67"}]};
+const KEY='shenchu-fridge',TODAY=new Date();TODAY.setHours(0,0,0,0);
+const FLAVORS=['咸鲜','甜','酸','辣','麻','辛香料','香草','复合调味','油脂','酒香','勾芡/其他'];
+const FGROUPS=['肉禽','海鲜','冷冻加工','蛋奶','蔬菜','腌菜罐头','主食'];
+const ZONES={冷冻:{ic:'❄️',col:'#3a7bd5'},冷藏:{ic:'🧊',col:'#178a5a'},常温:{ic:'🗄️',col:'#a0602a'}};
+// ---------- data / versioning ----------
+let DB;
+(function load(){let s=null;try{s=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+ if(s&&s.version&&s.version>=EMBED.version){DB=s}else{if(s)localStorage.setItem(KEY+'-backup-'+(s.version||'old'),JSON.stringify(s));DB=JSON.parse(JSON.stringify(EMBED))}
+ DB.rules=EMBED.rules;save()})();
+function save(){localStorage.setItem(KEY,JSON.stringify(DB))}
+function bump(){/* local edits keep same base version but mark edit time */DB.edited=new Date().toISOString();save()}
+// ---------- shelf life ----------
+function days(a,b){return Math.round((b-a)/864e5)}
+function life(it){
+ if(it.qty<=0)return{k:'out',t:'用完了',c:'s-out',left:null};
+ const r=DB.rules[it.rule]||{u:[30,60],o:[7,14]},[bb,mx]=it.opened?r.o:r.u;
+ const d0=new Date(it.intake+'T00:00:00'),age=days(d0,TODAY),lb=bb-age,lm=mx-age;
+ const soon=Math.min(14,Math.max(2,Math.round(bb*.2)));
+ if(lm<0)return{k:'bad',t:'可能过期',c:'s-bad',left:lm,lb,lm,bb,mx,age};
+ if(lb<0)return{k:'past',t:'过了最佳赏味期',c:'s-past',left:lm,lb,lm,bb,mx,age};
+ if(lb<=soon)return{k:'soon',t:'尽快吃',c:'s-soon',left:lb,lb,lm,bb,mx,age};
+ return{k:'ok',t:'新鲜',c:'s-ok',left:lb,lb,lm,bb,mx,age};
+}
+function stLabel(L,it){if(L.k==='out')return'用完了';
+ const d=L.k==='ok'||L.k==='soon'?L.lb:L.lm;
+ const tx=d>=60?Math.round(d/30)+'个月':d+'天';
+ if(L.k==='bad')return'可能过期 · 超'+(-L.lm)+'天';
+ if(L.k==='past')return'过赏味期 · 最多还'+tx;
+ return L.t+' · 还'+tx+(it.low?' · 快用完':'')}
+// ---------- pixel sprites (12x12; k=描边 a=主色 b=副色 w=白 .=空) ----------
+const SP={
+bottle:"....kkkk........kbbk........kaak.......kaaaak.....kaaaaaak....kawaaaak....kwbbbbak....kwbwwbak....kabbbbak....kaaaaaak....kaaaaaak.....kkkkkk...",
+oil:"....kkkk........kbbk........kwak.......kawwak.....kawaaaak....kawaaaak....kabbbbak....kabwwbak....kabbbbak....kawaaaak....kaaaaaak.....kkkkkk...",
+jar:"..............kkkkkkkk....kbbbbbbk....kkkkkkkk...kaaaaaaaak..kwaaaaaaak..kwwwwwwaak..kawbbbwaak..kawwwwwaak..kaaaaaaaak..kaaaaaaaak...kkkkkkkk..",
+packet:".............kkkkkkkkkk..kbkbkbkbkk..kaaaaaaaak..kawwaaaaak..kaaabbbaak..kaabbbbbak..kaaabbbaak..kaaaaaaaak..kbkbkbkbkk..kkkkkkkkkk.............",
+bag:"..kkkkkkkk....kwwwwwwk....kkkkkkkk....kaaaaaak...kaaaaaaaak..kawwwwwaak..kawbbbwaak..kawbbbwaak..kawwwwwaak..kaaaaaaaak..kaaaaaaaak...kkkkkkkk..",
+powder:"....kkkk.......kwkwkk......kkkkkk......kbbbbk.....kaaaaaak....kawwwwak....kawbbwak....kawwwwak....kaaaaaak....kaaaaaak....kaaaaaak....kkkkkkkk..",
+box:"..............kkkkkkkk...kaaaaaaaak..kawwwwwwak..kawbbbbwak..kawbbbbwak..kawwwwwwak..kaaaaaaaak..kbbbbbbbbk..kbbbbbbbbk..kkkkkkkkkk.............",
+leaf:"....................kkk.......kkaak......kaaaak.....kaabaak....kaabaak.....kabaak.....kabaak.......kbkkk.......kbk.........kk......................",
+pepper:"........................kk.........kaak.kk.....kwak.kak.....kk.kaak...kk...kkk....kaak.kk.....kwak.kak.kk..kk.kwak.ka......kk..kk............",
+stick:"......................kk.........kak........kabk.......kabk.......kabk.......kabk.......kabk.......kabk.......kabk.......kabk........kkk........",
+star:".................kk.........kaak.....kk.kaak.kk..kaakbbkaak...kabwwbak....kabwwbak...kaakbbkaak..kk.kaak.kk.....kaak.........kk.................",
+garlic:".....kk..........kbk........kwwk.......kwwwwk.....kwwawwwk....kwwawwawwk..kwwawwawwk..kwwawwawwk..kwwwwwwwwk...kwwwwwwk.......kkbbkk..............",
+honey:"..............kkkkkkkk....kbbbbbbk....kkkkkkkk...kaaaaaaaak..kawbbbbaak..kawbaabaak..kawbbbbaak..kaaaaaaaak..kaaaaaaaak..kaaaaaaaak...kkkkkkkk..",
+sugar:"............................kkk.........kwwak.......kwaak.kk.......kkk.kwak..kkk...kaak.kwwak...kk...kwaak.kkk....kkk.kwwak.......kaaak.......kkk..",
+egg:".................kk.........kwwk.......kwwwak.....kwwwwaak....kwwwwwak...kwwwwwwaak..kwwwwwwaak..kwwwwwwaak...kwwwwaak.....kaaaak.......kkkk....",
+milk:"....kkkk.......kwwwwk.....kwwwwwwk....kkkkkkkk....kaaaaaak....kawwwwak....kawbbwak....kawbbwak....kawwwwak....kaaaaaak....kaaaaaak....kkkkkkkk..",
+cheese:"................................kk........kkaak.....kkaaaak...kkaaaaaak..kaaaaaaaaak.kkkkkkkkkkk.kabaaabaaak.kaaaabaaabk.kabaaaaaaak.kkkkkkkkkkk",
+wing:"..................kkk.........kaaak.......kaawaak.....kaawaaak.....kaaaaaak.....kaaaaak.......kaaak.........kwk........kwwk.......kwkkwk......kk..kk...",
+beef:"...............................kkkkkk.....kaaaaaakk..kaabbaaaaak.kabwwbaaaak.kaabbaaawak.kaaaaaaawak..kaaaaawwk.....kkkkkkk.............................",
+fishball:"............................kkkk.......kwwaak......kwaaak.....kkkaakkk...kwwakkwwak..kwaaakwaak..kaaaakaaak...kkkk.kkk..........................",
+shrimp:".................kkkk.......kaaaak.....kawaaaak....kaak.kaak...kak...kak...kaak..kk.....kaak.........kaak.........kbbk.......kbbk.........kk.....",
+noodle:"..............kkkkkkkk....kawawawk....kawawawk....kawawawk....kbbbbbbk....kbwwwwbk....kbbbbbbk....kawawawk....kawawawk....kawawawk....kkkkkkkk..",
+cup:".............kkkkkkkkkk..kbbbbbbbbk..kkkkkkkkkk...kaaaaaak....kawwwwak....kawbbwak....kawwwwak.....kaaaak......kaaaak......kkkkkk...............",
+rice:"...kkkkkk.....kbkbbkbk.....kaaaak.....kaaaaaak...kaaaaaaaak..kawwwwwaak..kawbwbwaak..kawwbwwaak..kawwwwwaak..kaaaaaaaak..kaaaaaaaak...kkkkkkkk..",
+potato:"...........................kkkkk......kaaaaaakk..kaabaaaaaak.kaaaaaabaak.kaawaaaaaak.kaaaabaaak...kkaaaaak.......kkkkk...........................",
+onion:".....kk..........kbk........kaak.......kaaaak.....kaawaaak....kaawaaaaak..kaawaabaak..kaaaaabaak..kaaaaabaak...kaaaaaak.....kkbbkk..............",
+radish:"...kbk.kbk......kbkbk........kbk........kwwak.......kwwak.......kwwak.......kwwak........kwak........kwak........kwk..........k..................",
+mushroom:"................kkkk......kkaaaakk...kaawaaaaak..kawwaabaak..kaaaaaaaak..kkkkkkkkkk.....kwwk........kwwk........kwwk.......kkkkkk...............",
+sausage:"..............................................k..........kak......kkkak.......kkaaaak.....kawwaak.....kaaaaak.....kaaaakk.....kakkkk.......k.....................",
+nugget:"...........................kkkk.......kaabakk....kabaaaaak...kaaaabaaak..kaabaaaaak...kaaaaabak....kkaaaak.......kkkk..........................."};
+const ICACHE={};
+function icon(it,size){const key=it.sprite+it.c1+it.c2+size;if(ICACHE[key])return ICACHE[key];
+ const s=(SP[it.sprite]||SP.box).padEnd(144,'.'),c=document.createElement('canvas'),n=12,pad=2,px=Math.floor(size/(n+pad*2));
+ c.width=c.height=size;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,size,size);
+ const off=Math.floor((size-px*n)/2),pal={k:'#1b1b2f',a:it.c1||'#999',b:it.c2||'#555',w:'#ffffff'};
+ for(let i=0;i<144;i++){const ch=s[i];if(ch==='.')continue;g.fillStyle=pal[ch];g.fillRect(off+(i%n)*px,off+Math.floor(i/n)*px,px,px)}
+ return ICACHE[key]=c.toDataURL()}
+// ---------- helpers ----------
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const byId=id=>DB.items.find(i=>i.id===id);
+function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),1800)}
+function copy(t){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('✅ 已复制'),()=>{prompt('长按复制：',t)})}
+function attention(){const r={bad:[],soon:[],out:[]};DB.items.forEach(it=>{const L=life(it);if(L.k==='bad')r.bad.push(it);else if(L.k==='soon'||L.k==='past')r.soon.push(it);else if(L.k==='out'||it.low)r.out.push(it)});return r}
+let state={zone:'冷冻',flavor:'全部'};
+function go(h){location.hash=h}
+window.addEventListener('hashchange',render);
+function head(title,back){return`<header>${back?`<button class="back" onclick="history.length>1?history.back():go('')">◀ 返回</button>`:''}<h1>${title}</h1><span class="d">${TODAY.getMonth()+1}月${TODAY.getDate()}日</span></header>`}
+function navbar(cur){const b=(h,ic,t,cls='')=>`<button class="${cur===h?'on':''} ${cls}" onclick="go('${h}')"><span>${ic}</span>${t}</button>`;
+ const sh=DB.items.filter(i=>i.qty<=0||i.low).length;
+ return`<nav>${b('','🏠','冰箱')}${b('shop','🛒','购物'+(sh?`<i class="dot">${sh}</i>`:''))}${b('intake','📸','进货','big')}${b('add','➕','添加')}</nav>`}
+function rowHTML(it){const L=life(it);
+ return`<div class="row ${it.qty<=0?'out':''}"><img class="ico" src="${icon(it,48)}" alt="" onclick="go('item/${it.id}')">
+ <div class="mid" onclick="go('item/${it.id}')"><div class="nm">${esc(it.name)}</div>
+ ${it.kind==='调料'&&it.taste?`<div class="sub">${esc(it.taste)}</div>`:''}
+ <span class="st ${L.c}">${stLabel(L,it)}</span>${(it.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+ <div class="step"><button onclick="qty('${it.id}',-1)" aria-label="减">−</button><div class="q">${it.qty}<span class="u">${esc(it.unit)}</span></div><button onclick="qty('${it.id}',1)" aria-label="加">+</button></div></div>`}
+window.qty=(id,d)=>{const it=byId(id);it.qty=Math.max(0,+(it.qty+d).toFixed(2));if(d>0&&it.qty===1&&d===1)it.low=false;bump();render()};
+// ---------- views ----------
+function vHome(){const A=attention(),zc=z=>DB.items.filter(i=>i.zone===z&&i.qty>0).length,za=z=>DB.items.filter(i=>i.zone===z&&['bad','soon','past'].includes(life(i).k)).length;
+ const dot=z=>za(z)?`<i class="dot">${za(z)}</i>`:'';
+ const first=A.bad[0]||A.soon[0];
+ return head('🍳 神厨冰箱')+`<main>
+ <div class="alert"><button class="a-red ${A.bad.length?'':'a-zero'}" onclick="go('alert/bad')"><b>${A.bad.length}</b>可能过期</button>
+ <button class="a-or ${A.soon.length?'':'a-zero'}" onclick="go('alert/soon')"><b>${A.soon.length}</b>尽快吃</button>
+ <button class="a-gr ${A.out.length?'':'a-zero'}" onclick="go('shop')"><b>${A.out.length}</b>要买</button></div>
+ ${first?`<div class="todo px">👉 现在先处理：<u onclick="go('item/${first.id}')">${esc(first.name)}</u></div>`:`<div class="todo px" style="background:#b8f0b8">✅ 一切正常，没有要马上处理的</div>`}
+ <div class="scene"><div><div class="fridge">
+  <button class="door d-frz" id="dz-冷冻" onclick="openDoor('冷冻')"><span class="lbl">❄️ 冷冻区${dot('冷冻')}</span><span class="n">${zc('冷冻')} 样</span><i class="handle"></i></button>
+  <button class="door d-cold" id="dz-冷藏" onclick="openDoor('冷藏')"><span class="lbl">🧊 冷藏区${dot('冷藏')}</span><span class="n">${zc('冷藏')} 样</span><i class="handle"></i></button>
+ </div><div class="feet"><i></i><i></i></div></div>
+ <button class="shelf" id="dz-常温" onclick="openDoor('常温')"><span class="lbl">🗄️<br>常温柜${dot('常温')}</span><br><span class="n">${zc('常温')} 样</span><span class="rows"><i></i><i></i><i></i></span></button></div>
+ <p class="hint blink">▲ 点一扇门打开 ▲</p></main>`+navbar('')}
+window.openDoor=z=>{const d=document.getElementById('dz-'+z);if(d&&d.classList.contains('door')){d.classList.add('open');setTimeout(()=>go('zone/'+z),420)}else go('zone/'+z)};
+function vZone(z){state.zone=z;const its=DB.items.filter(i=>i.zone===z);
+ const ord=(a,b)=>(a.qty<=0)-(b.qty<=0)||({bad:0,past:1,soon:2,ok:3,out:4}[life(a).k]-{bad:0,past:1,soon:2,ok:3,out:4}[life(b).k]);
+ const food=its.filter(i=>i.kind==='食材').sort(ord),sea=its.filter(i=>i.kind==='调料');
+ const fl=[...new Set(sea.map(i=>i.group))].sort((a,b)=>FLAVORS.indexOf(a)-FLAVORS.indexOf(b));
+ if(state.flavor!=='全部'&&!fl.includes(state.flavor))state.flavor='全部';
+ const sf=sea.filter(i=>state.flavor==='全部'||i.group===state.flavor).sort((a,b)=>FLAVORS.indexOf(a.group)-FLAVORS.indexOf(b.group)||ord(a,b));
+ let h=head(ZONES[z].ic+' '+z+'区',1)+`<main><div class="tabs">${Object.keys(ZONES).map(k=>`<button class="${k===z?'on':''}" onclick="go('zone/${k}')">${ZONES[k].ic} ${k}</button>`).join('')}</div>`;
+ if(food.length)h+=`<div class="sec">🥩 食材 ${food.length}</div>`+food.map(rowHTML).join('');
+ if(sea.length){h+=`<div class="sec">🧂 调料 ${sea.length}</div><div class="chips">${['全部',...fl].map(f=>`<button class="${f===state.flavor?'on':''}" onclick="state.flavor='${f}';render()">${f}</button>`).join('')}</div>`;
+  let last='';sf.forEach(i=>{if(state.flavor==='全部'&&i.group!==last){last=i.group;h+=`<div style="font-size:14px;margin:10px 0 6px;color:#556">— ${last} —</div>`}h+=rowHTML(i)})}
+ if(!its.length)h+='<div class="empty">这里空空的</div>';
+ return h+'</main>'+navbar('zone')}
+function vItem(id){const it=byId(id);if(!it)return head('找不到',1)+'<div class="empty">这个物品已删除</div>'+navbar();
+ const L=life(it),r=DB.rules[it.rule]||{},n=it.nut;
+ const big=document.createElement('canvas');
+ return head('物品详情',1)+`<main><div class="card px"><div class="hero"><img src="${icon(it,96)}" style="width:96px;height:96px;border:4px solid var(--ink);image-rendering:pixelated"><div><h2>${esc(it.name)}</h2>${it.orig&&it.orig!==it.name?`<div class="o">${esc(it.orig)}</div>`:''}
+ <div style="margin-top:6px">${(it.tags||[]).map(t=>`<span class="tag">⚠ ${t}</span>`).join('')}</div></div></div>
+ <div class="big-st st ${L.c}" style="display:block">${stLabel(L,it)}</div>
+ <div class="step" style="justify-content:center;margin-top:14px;gap:16px"><button onclick="qty('${it.id}',-1)">−</button><div class="q" style="font-size:24px">${it.qty}<span class="u" style="font-size:13px">${esc(it.unit)}</span></div><button onclick="qty('${it.id}',1)">+</button></div>
+ ${it.kind==='调料'?`<div class="kv"><div>风味</div><div>${esc(it.group)}</div><div>适合</div><div>${esc(it.style)}</div><div>味道</div><div>${esc(it.taste)}</div></div>`:''}
+ <details><summary>📅 保质期 & 存放</summary><div class="kv"><div>位置</div><div>${it.zone}区 · ${it.opened?'已开封':'未开封'}</div><div>入库</div><div>${it.intake}（${L.age??'-'} 天前）</div>
+ <div>最佳赏味</div><div>${L.bb??'-'} 天内</div><div>最多存</div><div>${L.mx??'-'} 天</div><div>参考</div><div>${esc(r.t||'')}</div></div><div class="note">* 通用估算，以包装日期和闻/看为准。入库日期是记录日，实际购买可能更早。</div></details>
+ ${n?`<details><summary>📊 营养（每100g）</summary><div class="kv"><div>热量</div><div>${n.kcal} kcal</div><div>蛋白质</div><div>${n.p} g</div><div>脂肪</div><div>${n.f} g</div><div>碳水</div><div>${n.c} g</div></div>${n.est?'<div class="note">* 同类食物估算值</div>':''}</details>`:''}
+ <div class="acts"><button onclick="toggle('${it.id}','opened')">${it.opened?'📦 改未开封':'🔓 标记开封'}</button><button onclick="toggle('${it.id}','low')">${it.low?'✅ 还够用':'⚠️ 快用完'}</button>
+ <button onclick="go('edit/${it.id}')">✏️ 编辑</button><button class="danger" onclick="del('${it.id}')">🗑️ 删除</button></div></div></main>`+navbar()}
+window.toggle=(id,k)=>{const it=byId(id);it[k]=!it[k];bump();render()};
+window.del=id=>{const it=byId(id);if(confirm('确定删除「'+it.name+'」？')){DB.items=DB.items.filter(i=>i.id!==id);bump();toast('🗑️ 已删除');history.back()}};
+function vAlert(k){const A=attention(),list=k==='bad'?A.bad:A.soon;
+ return head(k==='bad'?'🔴 可能过期':'🟠 尽快吃',1)+`<main>${list.length?list.map(rowHTML).join(''):'<div class="empty">✅ 没有，放心</div>'}<div class="note">可能过期：先闻、看，不对就扔。尽快吃：这几天优先用它做饭。</div></main>`+navbar()}
+function vShop(){const L=DB.items.filter(i=>i.qty<=0||i.low);
+ return head('🛒 购物清单',1)+`<main>${L.length?`<button class="primary" onclick="copyShop()">📋 复制清单（带俄文）</button><div style="height:14px"></div>`+L.map(it=>`<div class="row"><img class="ico" src="${icon(it,48)}"><div class="mid"><div class="nm">${esc(it.name)}</div><div class="sub">${esc(it.orig)}</div><span class="st ${it.qty<=0?'s-out':'s-low'}">${it.qty<=0?'用完了':'快用完'}</span></div><button style="flex:none;background:var(--g)" onclick="bought('${it.id}')">买到了</button></div>`).join(''):'<div class="empty">🎉 什么都不缺</div>'}</main>`+navbar('shop')}
+window.copyShop=()=>copy('🛒 购物清单\n'+DB.items.filter(i=>i.qty<=0||i.low).map(i=>'□ '+i.name+(i.orig&&i.orig!==i.name?'（'+i.orig+'）':'')).join('\n'));
+window.bought=id=>{const it=byId(id);it.qty=Math.max(1,it.qty);it.low=false;it.intake=new Date().toISOString().slice(0,10);it.opened=false;bump();toast('✅ 已入库：'+it.name);render()};
+function vIntake(){return head('📸 进货',1)+`<main><div class="card px" style="font-size:18px;line-height:1.6">① 拍照发给 <b>神厨</b>（聊天里）<br>② 我帮你归类，发你新页面<br>③ 打开新页面，自动更新</div>
+ <button class="primary" onclick="exportDB()">📤 导出给神厨</button><div class="note" style="margin:6px 0 18px">复制你现在的库存代码，粘贴发给我，我会合并你改过的数量。</div>
+ <details><summary>📥 导入数据</summary><textarea id="imp" rows="5" placeholder="把神厨给你的代码粘贴到这里"></textarea><div style="height:10px"></div><button onclick="importDB()" style="width:100%">导入</button></details>
+ <details><summary>↩️ 恢复备份</summary>${Object.keys(localStorage).filter(k=>k.startsWith(KEY+'-backup')).map(k=>`<button style="width:100%;margin-top:8px" onclick="restore('${k}')">${k.replace(KEY+'-backup-','版本 ')}</button>`).join('')||'<div class="note">暂无备份</div>'}</details>
+ <div class="note">数据版本 ${DB.version}${DB.edited?' · 本机修改于 '+DB.edited.slice(0,16).replace('T',' '):''}</div></main>`+navbar('intake')}
+window.exportDB=()=>copy('#神厨库存 '+JSON.stringify({v:DB.version,edited:DB.edited||'',items:DB.items.map(i=>[i.id,i.name,i.zone,i.qty,i.unit,i.intake,i.opened?1:0,i.low?1:0])}));
+window.importDB=()=>{let t=$('#imp').value.trim().replace(/^#神厨库存\s*/,'');try{const d=JSON.parse(t);
+ if(d.items&&d.items[0]&&!Array.isArray(d.items[0])){localStorage.setItem(KEY+'-backup-'+DB.version+'-导入前',JSON.stringify(DB));d.rules=EMBED.rules;DB=d;save();toast('✅ 导入成功');go('')}else{toast('❌ 这是导出码，不是完整数据')}}catch(e){toast('❌ 代码格式不对')}};
+window.restore=k=>{if(confirm('恢复这个备份？')){DB=JSON.parse(localStorage.getItem(k));DB.rules=EMBED.rules;save();toast('✅ 已恢复');go('')}};
+function vForm(id){const it=id?byId(id):{name:'',orig:'',zone:'冷藏',kind:'食材',group:'肉禽',qty:1,unit:'个',intake:new Date().toISOString().slice(0,10),opened:false,rule:''};
+ const opt=(arr,v)=>arr.map(a=>`<option ${a===v?'selected':''}>${a}</option>`).join('');
+ return head(id?'✏️ 编辑':'➕ 添加',1)+`<main><div class="card px">
+ <label>名称</label><input id="f-name" value="${esc(it.name)}" placeholder="例如：猪蹄">
+ <div class="two"><div><label>位置</label><select id="f-zone">${opt(['冷冻','冷藏','常温'],it.zone)}</select></div>
+ <div><label>类型</label><select id="f-kind" onchange="document.getElementById('f-group').innerHTML=(this.value==='调料'?FLAVORS:FGROUPS).map(a=>'<option>'+a+'</option>').join('')">${opt(['食材','调料'],it.kind)}</select></div></div>
+ <label>分类 / 风味</label><select id="f-group">${opt(it.kind==='调料'?FLAVORS:FGROUPS,it.group)}</select>
+ <div class="two"><div><label>数量</label><input id="f-qty" type="number" min="0" step="1" value="${it.qty}"></div><div><label>单位</label><input id="f-unit" value="${esc(it.unit)}"></div></div>
+ <label>入库日期</label><input id="f-date" type="date" value="${it.intake}">
+ <label class="check"><input id="f-open" type="checkbox" ${it.opened?'checked':''}> 已开封</label>
+ <details><summary>更多（可不填）</summary><label>原名 / 俄文</label><input id="f-orig" value="${esc(it.orig)}">
+ ${''}<label>适合什么菜</label><input id="f-style" value="${esc(it.style||'')}"><label>味道</label><input id="f-taste" value="${esc(it.taste||'')}"></details>
+ <div style="height:14px"></div><button class="primary" onclick="saveForm('${id||''}')">💾 保存</button></div></main>`+navbar(id?'':'add')}
+const AUTO={冷冻:{肉禽:'frozen_meat',海鲜:'frozen_sea',冷冻加工:'frozen_proc'},冷藏:{蛋奶:'milk',蔬菜:'radish',肉禽:'deli',海鲜:'deli',腌菜罐头:'pickle'},常温:{蔬菜:'rootveg',主食:'noodle',腌菜罐头:'pickle'}};
+const SPR={肉禽:['beef','#c8443a','#fff'],海鲜:['shrimp','#f07050','#fff'],冷冻加工:['nugget','#e0a040','#a06a20'],蛋奶:['milk','#4a8ad9','#fff'],蔬菜:['potato','#c8a060','#8a6a30'],腌菜罐头:['jar','#4a8a2a','#c8e070'],主食:['noodle','#f2d070','#c8442c'],
+ 咸鲜:['bottle','#6b3a1e','#e8c020'],甜:['sugar','#fff','#cfd8e8'],酸:['bottle','#e8d8a0','#c8442c'],辣:['jar','#c8321e','#e8c020'],麻:['pepper','#a0401e','#2a5a1a'],辛香料:['powder','#9a5a2a','#e8c020'],香草:['leaf','#4f9a3a','#2f6b25'],复合调味:['packet','#e8a020','#c8442c'],油脂:['oil','#f2d040','#2a7a3a'],酒香:['bottle','#c89a50','#c8442c'],'勾芡/其他':['bag','#f0f0f0','#4a8ad9']};
+window.saveForm=id=>{const v=k=>document.getElementById('f-'+k).value.trim();if(!v('name')){toast('请填名称');return}
+ let it=id?byId(id):null;const isNew=!it;if(!it){it={id:'u'+Date.now().toString(36),tags:[],nut:null,low:false};DB.items.push(it)}
+ const grpChanged=it.group!==v('group');
+ Object.assign(it,{name:v('name'),zone:v('zone'),kind:v('kind'),group:v('group'),qty:Math.max(0,+v('qty')||0),unit:v('unit')||'个',intake:v('date')||new Date().toISOString().slice(0,10),opened:document.getElementById('f-open').checked,orig:v('orig')||v('name'),style:v('style'),taste:v('taste')});
+ if(isNew||grpChanged||!it.rule){it.rule=it.kind==='调料'?(it.zone==='冷藏'?'sauce':'blend'):((AUTO[it.zone]||{})[it.group]||'deli');}
+ if(isNew||grpChanged){const s=SPR[it.group]||['box','#999','#555'];[it.sprite,it.c1,it.c2]=s}
+ bump();toast('💾 已保存');go('item/'+it.id)};
+function render(){const h=decodeURIComponent(location.hash.slice(1)),[v,a]=h.split('/');let out;
+ if(v==='zone')out=vZone(a);else if(v==='item')out=vItem(a);else if(v==='shop')out=vShop();else if(v==='intake')out=vIntake();else if(v==='add')out=vForm();else if(v==='edit')out=vForm(a);else if(v==='alert')out=vAlert(a);else out=vHome();
+ $('#app').innerHTML=out;if(v!=='zone'||!render.keep)window.scrollTo(0,0)}
+render();
+</script></body></html>
