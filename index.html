@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow">
+<!DOCTYPE html><html lang="zh-CN"><head>
+<meta name="robots" content="noindex,nofollow"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>神厨冰箱</title>
 <style>
@@ -82,9 +83,10 @@ body.locked button[onclick^="toggle"]::after,body.locked button[onclick^="del"]:
 @media(min-width:900px){.bbar{max-width:560px}}
 .step .u{display:block;font-size:10px;color:#667;font-weight:400}
 /* nav */
-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--ink);padding:8px;gap:8px;z-index:5}
-nav button{font-size:15px;padding:4px 2px;min-height:56px;border-color:#000;box-shadow:3px 3px 0 #000;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2}
-nav button span{font-size:22px}
+nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;display:grid;grid-template-columns:repeat(5,1fr);background:var(--ink);padding:6px;gap:5px;z-index:5}
+nav button{font-size:13px;padding:4px 1px;min-height:56px;min-width:0;white-space:nowrap;border-color:#000;box-shadow:3px 3px 0 #000;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.2}
+nav button span{font-size:22px;height:26px;display:flex;align-items:center}
+nav button span img{width:30px;height:23px;image-rendering:pixelated}
 nav .on{background:var(--y)}
 nav .big{background:var(--g)}
 /* detail */
@@ -207,7 +209,7 @@ window.addEventListener('hashchange',render);
 function head(title,back){return`<header>${back?`<button class="back" onclick="history.length>1?history.back():go('')">◀ 返回</button>`:''}<h1>${title}</h1><span class="d">${TODAY.getMonth()+1}月${TODAY.getDate()}日</span>${LOCKBTN()}</header>`}
 function navbar(cur){const b=(h,ic,t,cls='')=>`<button class="${cur===h?'on':''} ${cls}" onclick="go('${h}')"><span>${ic}</span>${t}</button>`;
  const sh=DB.items.filter(i=>i.qty<=0||i.low).length;
- return`<nav>${b('','🏠','冰箱')}${b('shop','🛒','购物'+(sh?`<i class="dot">${sh}</i>`:''))}${b('intake','📸','进货','big')}${b('add','➕','添加')}</nav>`}
+ return`<nav>${b('','🏠','冰箱')}${b('shop','🛒','购物'+(sh?`<i class="dot">${sh}</i>`:''))}${b('intake','📸','进货','big')}${b('add','➕','添加')}${b('recipes',`<img src="${bookURL()}" alt="📖">`,'菜谱')}</nav>`}
 function rowHTML(it){const L=life(it);const B=state.batch,on=B&&state.sel.has(it.id);
  if(B)return`<div class="row ${it.qty<=0?'out':''} ${on?'sel':''}" onclick="selT('${it.id}')"><div class="bk ${on?'on':''}">${on?'✓':''}</div><img class="ico" src="${icon(it,48)}" alt=""><div class="mid"><div class="nm">${esc(it.name)}</div><span class="st ${L.c}">${stLabel(L,it)}</span></div><div class="step"><div class="q" style="border:0">${it.qty}<span class="u">${esc(it.unit)}</span></div></div></div>`;
  return`<div class="row ${it.qty<=0?'out':''}"><img class="ico" src="${icon(it,48)}" alt="" onclick="go('item/${it.id}')">
@@ -340,7 +342,7 @@ window.shopAll=()=>{const L=DB.items.filter(i=>i.qty<=0||i.low).map(i=>i.id);if(
 window.buyMany=()=>{const L=DB.items.filter(i=>state.ssel.has(i.id));if(!L.length)return;snap();const d=new Date().toISOString().slice(0,10);L.forEach(it=>{it.qty=Math.max(1,it.qty);it.low=false;it.intake=d;it.opened=false});state.ssel.clear();bump();render();toastU('✅ '+L.length+' 样已入库')};
 window.addEventListener('hashchange',()=>{if(!location.hash.startsWith('#zone')){state.batch=false;state.sel.clear()}state.ssel.clear()});
 /* ===== EDIT-LOCK v1 ===== */
-const LOCK={"salt": "3dd32214b6716b2ddc7097044343ac5f", "iter": 100000, "hash": "0995a95c796f1fbf365bf256c9f68528b5b71e7938f5bba034d36e3584ed3ea0"},LKS='shenchu-unlocked';
+const LOCK={"salt": "3986d8c1025de8230f4c08da45be24a7", "iter": 100000, "hash": "eca22d559ee53d3c22259e959887c714e31713824e28f34ab861a16b98fd932e"},LKS='shenchu-unlocked';
 function unlocked(){return sessionStorage.getItem(LKS)===LOCK.hash}
 function LOCKBTN(){return unlocked()?`<button class="lk un" onclick="relock()">🔓 上锁</button>`:`<button class="lk" onclick="askUnlock()" aria-label="解锁编辑">🔒</button>`}
 function hx(b){return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
