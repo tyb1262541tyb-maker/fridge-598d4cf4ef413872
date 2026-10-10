@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow"><meta charset="utf-8">
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>神厨冰箱</title>
 <style>
@@ -21,6 +22,21 @@ main{padding:14px}
 .a-red{background:#ffd6d6}.a-or{background:#ffe7c2}.a-gr{background:#e4e4ea}
 .a-zero{opacity:.45}
 .todo{background:var(--y);padding:10px 12px;margin-bottom:14px;font-size:16px}
+
+/* edit lock */
+.lk{background:var(--y);min-height:40px;padding:4px 10px;font-size:16px;box-shadow:3px 3px 0 #000;border-color:#000;color:var(--ink)}
+.lk.un{background:var(--g)}
+body.locked button[onclick^="qty"],body.locked button[onclick^="toggle"],body.locked button[onclick^="del"],body.locked button[onclick^="bought"],body.locked button[onclick^="importDB"],body.locked button[onclick^="restore"],body.locked button[onclick^="saveForm"],body.locked button[onclick*="'add'"],body.locked button[onclick*="edit/"]{opacity:.45;filter:grayscale(1);position:relative}
+body.locked button[onclick^="toggle"]::after,body.locked button[onclick^="del"]::after,body.locked button[onclick^="bought"]::after,body.locked button[onclick^="saveForm"]::after,body.locked button[onclick*="edit/"]::after,body.locked button[onclick^="importDB"]::after{content:"🔒";font-size:12px;margin-left:4px}
+.lockmask{position:fixed;inset:0;background:rgba(27,27,47,.8);display:flex;align-items:center;justify-content:center;z-index:99;padding:20px}
+.lockbox{background:var(--bg);border:4px solid var(--ink);box-shadow:8px 8px 0 #000;padding:20px;width:100%;max-width:360px;text-align:center}
+.lockbox h2{margin:0 0 6px;font-size:22px}.lockbox p{margin:0 0 14px;font-size:14px;color:#555}
+.lockbox input{width:100%;font:inherit;font-size:20px;padding:12px;border:4px solid var(--ink);margin-bottom:14px;text-align:center}
+.lockbox .go{width:100%;background:var(--g);font-size:22px;min-height:60px}
+.lockbox .x{margin-top:12px;background:#fff;font-size:15px;min-height:40px;width:100%}
+.lockbox .err{color:var(--r);min-height:20px;font-size:15px;margin-bottom:6px}
+@keyframes shk{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+.shake{animation:shk .4s steps(4)}
 /* fridge */
 .scene{display:flex;gap:14px;justify-content:center;align-items:flex-end;margin:6px 0 4px}
 .fridge{width:200px;background:#dfe9f2;padding:6px;border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);position:relative}
@@ -169,7 +185,7 @@ function attention(){const r={bad:[],soon:[],out:[]};DB.items.forEach(it=>{const
 let state={zone:'冷冻',flavor:'全部'};
 function go(h){location.hash=h}
 window.addEventListener('hashchange',render);
-function head(title,back){return`<header>${back?`<button class="back" onclick="history.length>1?history.back():go('')">◀ 返回</button>`:''}<h1>${title}</h1><span class="d">${TODAY.getMonth()+1}月${TODAY.getDate()}日</span></header>`}
+function head(title,back){return`<header>${back?`<button class="back" onclick="history.length>1?history.back():go('')">◀ 返回</button>`:''}<h1>${title}</h1><span class="d">${TODAY.getMonth()+1}月${TODAY.getDate()}日</span>${LOCKBTN()}</header>`}
 function navbar(cur){const b=(h,ic,t,cls='')=>`<button class="${cur===h?'on':''} ${cls}" onclick="go('${h}')"><span>${ic}</span>${t}</button>`;
  const sh=DB.items.filter(i=>i.qty<=0||i.low).length;
  return`<nav>${b('','🏠','冰箱')}${b('shop','🛒','购物'+(sh?`<i class="dot">${sh}</i>`:''))}${b('intake','📸','进货','big')}${b('add','➕','添加')}</nav>`}
@@ -264,5 +280,29 @@ window.saveForm=id=>{const v=k=>document.getElementById('f-'+k).value.trim();if(
 function render(){const h=decodeURIComponent(location.hash.slice(1)),[v,a]=h.split('/');let out;
  if(v==='zone')out=vZone(a);else if(v==='item')out=vItem(a);else if(v==='shop')out=vShop();else if(v==='intake')out=vIntake();else if(v==='add')out=vForm();else if(v==='edit')out=vForm(a);else if(v==='alert')out=vAlert(a);else out=vHome();
  $('#app').innerHTML=out;if(v!=='zone'||!render.keep)window.scrollTo(0,0)}
+/* ===== EDIT-LOCK v1 ===== */
+const LOCK={"salt": "ae45e9390587aec06bb9e7916f0c113b", "iter": 100000, "hash": "30c50f2cd050e47dceb4034bc0ee67783b160417edfc9b4a6b75bd136b6fb010"},LKS='shenchu-unlocked';
+function unlocked(){return sessionStorage.getItem(LKS)===LOCK.hash}
+function LOCKBTN(){return unlocked()?`<button class="lk un" onclick="relock()">🔓 上锁</button>`:`<button class="lk" onclick="askUnlock()" aria-label="解锁编辑">🔒</button>`}
+function hx(b){return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function checkPw(pw){const salt=new Uint8Array(LOCK.salt.match(/../g).map(h=>parseInt(h,16)));
+ const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
+ const b=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt,iterations:LOCK.iter},k,256);return hx(b)===LOCK.hash}
+window.checkPw=checkPw;
+let pending=null;
+window.askUnlock=(after)=>{pending=typeof after==='function'?after:null;if(document.querySelector('.lockmask'))return;
+ const m=document.createElement('div');m.className='lockmask';m.innerHTML=`<div class="lockbox px"><h2>🔒 输入密码</h2><p>密码对了才能修改库存</p><div class="err" id="lkerr"></div><input id="lkpw" type="password" autocomplete="current-password" placeholder="密码"><button class="go" id="lkgo">解锁</button><button class="x" id="lkx">取消</button></div>`;
+ document.body.appendChild(m);const inp=m.querySelector('#lkpw');setTimeout(()=>inp.focus(),50);
+ const close=()=>{m.remove();if(location.hash==='#unlock')history.replaceState(null,'',location.pathname)};
+ const tryIt=async()=>{if(!inp.value)return;if(await checkPw(inp.value)){sessionStorage.setItem(LKS,LOCK.hash);close();applyLock();toast('🔓 已解锁');const f=pending;pending=null;if(f)f();else render()}
+  else{const b=m.querySelector('.lockbox');b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');m.querySelector('#lkerr').textContent='❌ 密码不对';inp.value='';inp.focus()}};
+ m.querySelector('#lkgo').onclick=tryIt;inp.onkeydown=e=>{if(e.key==='Enter')tryIt()};m.querySelector('#lkx').onclick=()=>{pending=null;close()}};
+window.relock=()=>{sessionStorage.removeItem(LKS);applyLock();toast('🔒 已上锁');render()};
+function applyLock(){document.body.classList.toggle('locked',!unlocked())}
+['qty','toggle','del','bought','importDB','restore','saveForm'].forEach(n=>{const f=window[n];window[n]=(...a)=>{if(unlocked())return f(...a);askUnlock(()=>f(...a))}});
+const _render=render;render=function(){const h=decodeURIComponent(location.hash.slice(1)),v=h.split('/')[0];
+ if(h==='unlock'){if(!unlocked()){location.hash.length;history.replaceState(null,'','#');_render();applyLock();askUnlock();return}history.replaceState(null,'','#')}
+ if((v==='add'||v==='edit')&&!unlocked()){const t=h;history.replaceState(null,'','#');_render();applyLock();askUnlock(()=>go(t));return}
+ _render();applyLock()};
 render();
 </script></body></html>
