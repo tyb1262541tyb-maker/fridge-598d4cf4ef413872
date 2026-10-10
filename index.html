@@ -1,5 +1,4 @@
-<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="robots" content="noindex,nofollow">
+<!DOCTYPE html><html lang="zh-CN"><head><meta name="robots" content="noindex,nofollow"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>神厨冰箱</title>
 <style>
@@ -26,8 +25,8 @@ main{padding:14px}
 /* edit lock */
 .lk{background:var(--y);min-height:40px;padding:4px 10px;font-size:16px;box-shadow:3px 3px 0 #000;border-color:#000;color:var(--ink)}
 .lk.un{background:var(--g)}
-body.locked button[onclick^="qty"],body.locked button[onclick^="toggle"],body.locked button[onclick^="del"],body.locked button[onclick^="bought"],body.locked button[onclick^="importDB"],body.locked button[onclick^="restore"],body.locked button[onclick^="saveForm"],body.locked button[onclick*="'add'"],body.locked button[onclick*="edit/"]{opacity:.45;filter:grayscale(1);position:relative}
-body.locked button[onclick^="toggle"]::after,body.locked button[onclick^="del"]::after,body.locked button[onclick^="bought"]::after,body.locked button[onclick^="saveForm"]::after,body.locked button[onclick*="edit/"]::after,body.locked button[onclick^="importDB"]::after{content:"🔒";font-size:12px;margin-left:4px}
+body.locked button[onclick^="qty"],body.locked button[onclick^="toggle"],body.locked button[onclick^="del"],body.locked button[onclick^="b"],body.locked button[onclick^="importDB"],body.locked button[onclick^="restore"],body.locked button[onclick^="saveForm"],body.locked button[onclick*="'add'"],body.locked button[onclick*="edit/"]{opacity:.45;filter:grayscale(1);position:relative}
+body.locked button[onclick^="toggle"]::after,body.locked button[onclick^="del"]::after,body.locked button[onclick^="b"]::after,body.locked button[onclick^="saveForm"]::after,body.locked button[onclick*="edit/"]::after,body.locked button[onclick^="importDB"]::after{content:"🔒";font-size:12px;margin-left:4px}
 .lockmask{position:fixed;inset:0;background:rgba(27,27,47,.8);display:flex;align-items:center;justify-content:center;z-index:99;padding:20px}
 .lockbox{background:var(--bg);border:4px solid var(--ink);box-shadow:8px 8px 0 #000;padding:20px;width:100%;max-width:360px;text-align:center}
 .lockbox h2{margin:0 0 6px;font-size:22px}.lockbox p{margin:0 0 14px;font-size:14px;color:#555}
@@ -74,7 +73,13 @@ body.locked button[onclick^="toggle"]::after,body.locked button[onclick^="del"]:
 .tag{display:inline-block;font-size:11px;padding:0 4px;margin:3px 0 0 3px;border:2px solid var(--r);color:var(--r);background:#fff}
 .step{display:flex;align-items:center;gap:4px;flex:none}
 .step button{width:44px;height:44px;min-height:44px;padding:0;font-size:24px;line-height:1;box-shadow:3px 3px 0 var(--ink);border-width:3px}
-.step .q{min-width:34px;text-align:center;font-size:18px}
+.step .q{min-width:34px;text-align:center;font-size:18px;cursor:pointer;border-bottom:3px dashed var(--ink);padding:2px 2px 0}
+.numbox input{font-size:34px!important;font-weight:700}.numbox .u2{font-size:16px;margin:-8px 0 12px;color:#556}.numbox .two2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.numbox .two2 button{min-height:60px;font-size:20px}
+.bk{width:44px;height:44px;flex:none;border:4px solid var(--ink);background:#fff;font-size:28px;line-height:36px;text-align:center;font-weight:700}.bk.on{background:var(--y)}.row.sel{background:#fff6c0}
+.btop{display:flex;gap:8px;margin:0 0 12px}.btop button{flex:1;min-height:52px;font-size:18px}.btop .on{background:var(--y)}
+.bbar{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:520px;background:var(--ink);color:var(--y);padding:8px;z-index:6;display:grid;grid-template-columns:repeat(5,1fr);gap:6px}.bbar .cnt{grid-column:1/-1;text-align:center;font-size:18px;padding:2px 0}.bbar button{min-height:54px;padding:0 2px;font-size:16px}.bbar button:disabled{opacity:.4}
+.toast .ud{margin-left:12px;background:var(--y);color:var(--ink);min-height:36px;font-size:16px;padding:4px 10px;border:3px solid var(--y)}
+@media(min-width:900px){.bbar{max-width:560px}}
 .step .u{display:block;font-size:10px;color:#667;font-weight:400}
 /* nav */
 nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;display:grid;grid-template-columns:repeat(4,1fr);background:var(--ink);padding:8px;gap:8px;z-index:5}
@@ -182,19 +187,20 @@ const byId=id=>DB.items.find(i=>i.id===id);
 function toast(t){const d=document.createElement('div');d.className='toast';d.textContent=t;document.body.appendChild(d);setTimeout(()=>d.remove(),1800)}
 function copy(t){(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('✅ 已复制'),()=>{prompt('长按复制：',t)})}
 function attention(){const r={bad:[],soon:[],out:[]};DB.items.forEach(it=>{const L=life(it);if(L.k==='bad')r.bad.push(it);else if(L.k==='soon'||L.k==='past')r.soon.push(it);else if(L.k==='out'||it.low)r.out.push(it)});return r}
-let state={zone:'冷冻',flavor:'全部'};
+let state={zone:'冷冻',flavor:'全部',batch:false,sel:new Set(),ssel:new Set()};
 function go(h){location.hash=h}
 window.addEventListener('hashchange',render);
 function head(title,back){return`<header>${back?`<button class="back" onclick="history.length>1?history.back():go('')">◀ 返回</button>`:''}<h1>${title}</h1><span class="d">${TODAY.getMonth()+1}月${TODAY.getDate()}日</span>${LOCKBTN()}</header>`}
 function navbar(cur){const b=(h,ic,t,cls='')=>`<button class="${cur===h?'on':''} ${cls}" onclick="go('${h}')"><span>${ic}</span>${t}</button>`;
  const sh=DB.items.filter(i=>i.qty<=0||i.low).length;
  return`<nav>${b('','🏠','冰箱')}${b('shop','🛒','购物'+(sh?`<i class="dot">${sh}</i>`:''))}${b('intake','📸','进货','big')}${b('add','➕','添加')}</nav>`}
-function rowHTML(it){const L=life(it);
+function rowHTML(it){const L=life(it);const B=state.batch,on=B&&state.sel.has(it.id);
+ if(B)return`<div class="row ${it.qty<=0?'out':''} ${on?'sel':''}" onclick="selT('${it.id}')"><div class="bk ${on?'on':''}">${on?'✓':''}</div><img class="ico" src="${icon(it,48)}" alt=""><div class="mid"><div class="nm">${esc(it.name)}</div><span class="st ${L.c}">${stLabel(L,it)}</span></div><div class="step"><div class="q" style="border:0">${it.qty}<span class="u">${esc(it.unit)}</span></div></div></div>`;
  return`<div class="row ${it.qty<=0?'out':''}"><img class="ico" src="${icon(it,48)}" alt="" onclick="go('item/${it.id}')">
  <div class="mid" onclick="go('item/${it.id}')"><div class="nm">${esc(it.name)}</div>
  ${it.kind==='调料'&&it.taste?`<div class="sub">${esc(it.taste)}</div>`:''}
  <span class="st ${L.c}">${stLabel(L,it)}</span>${(it.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
- <div class="step"><button onclick="qty('${it.id}',-1)" aria-label="减">−</button><div class="q">${it.qty}<span class="u">${esc(it.unit)}</span></div><button onclick="qty('${it.id}',1)" aria-label="加">+</button></div></div>`}
+ <div class="step"><button onclick="qty('${it.id}',-1)" aria-label="减">−</button><div class="q" onclick="numEdit('${it.id}')">${it.qty}<span class="u">${esc(it.unit)}</span></div><button onclick="qty('${it.id}',1)" aria-label="加">+</button></div></div>`}
 window.qty=(id,d)=>{const it=byId(id);it.qty=Math.max(0,+(it.qty+d).toFixed(2));if(d>0&&it.qty===1&&d===1)it.low=false;bump();render()};
 // ---------- views ----------
 function vHome(){const A=attention(),zc=z=>DB.items.filter(i=>i.zone===z&&i.qty>0).length,za=z=>DB.items.filter(i=>i.zone===z&&['bad','soon','past'].includes(life(i).k)).length;
@@ -218,19 +224,20 @@ function vZone(z){state.zone=z;const its=DB.items.filter(i=>i.zone===z);
  const fl=[...new Set(sea.map(i=>i.group))].sort((a,b)=>FLAVORS.indexOf(a)-FLAVORS.indexOf(b));
  if(state.flavor!=='全部'&&!fl.includes(state.flavor))state.flavor='全部';
  const sf=sea.filter(i=>state.flavor==='全部'||i.group===state.flavor).sort((a,b)=>FLAVORS.indexOf(a.group)-FLAVORS.indexOf(b.group)||ord(a,b));
- let h=head(ZONES[z].ic+' '+z+'区',1)+`<main><div class="tabs">${Object.keys(ZONES).map(k=>`<button class="${k===z?'on':''}" onclick="go('zone/${k}')">${ZONES[k].ic} ${k}</button>`).join('')}</div>`;
+ let h=head(ZONES[z].ic+' '+z+'区',1)+`<main${state.batch?' style="padding-bottom:150px"':''}><div class="btop"><button class="${state.batch?'on':''}" onclick="batchT()">${state.batch?'✖ 退出批量':'☑ 批量'}</button>${state.batch?`<button onclick="selAll('${z}')">${its.length&&its.every(i=>state.sel.has(i.id))?'取消全选':'全选'}</button>`:''}</div><div class="tabs">${Object.keys(ZONES).map(k=>`<button class="${k===z?'on':''}" onclick="go('zone/${k}')">${ZONES[k].ic} ${k}</button>`).join('')}</div>`;
  if(food.length)h+=`<div class="sec">🥩 食材 ${food.length}</div>`+food.map(rowHTML).join('');
  if(sea.length){h+=`<div class="sec">🧂 调料 ${sea.length}</div><div class="chips">${['全部',...fl].map(f=>`<button class="${f===state.flavor?'on':''}" onclick="state.flavor='${f}';render()">${f}</button>`).join('')}</div>`;
   let last='';sf.forEach(i=>{if(state.flavor==='全部'&&i.group!==last){last=i.group;h+=`<div style="font-size:14px;margin:10px 0 6px;color:#556">— ${last} —</div>`}h+=rowHTML(i)})}
  if(!its.length)h+='<div class="empty">这里空空的</div>';
- return h+'</main>'+navbar('zone')}
+ return h+'</main>'+(state.batch?bbar():navbar('zone'))}
+function bbar(){const n=state.sel.size,d=n?'':'disabled';return`<div class="bbar"><div class="cnt">已选 <b>${n}</b> 样</div><button ${d} onclick="bOp('add',-1)">−1</button><button ${d} onclick="bOp('add',1)">+1</button><button ${d} onclick="bSet()">设为…</button><button ${d} onclick="bOp('out')">用完</button><button ${d} class="danger" onclick="bOp('del')">删除</button></div>`}
 function vItem(id){const it=byId(id);if(!it)return head('找不到',1)+'<div class="empty">这个物品已删除</div>'+navbar();
  const L=life(it),r=DB.rules[it.rule]||{},n=it.nut;
  const big=document.createElement('canvas');
  return head('物品详情',1)+`<main><div class="card px"><div class="hero"><img src="${icon(it,96)}" style="width:96px;height:96px;border:4px solid var(--ink);image-rendering:pixelated"><div><h2>${esc(it.name)}</h2>${it.orig&&it.orig!==it.name?`<div class="o">${esc(it.orig)}</div>`:''}
  <div style="margin-top:6px">${(it.tags||[]).map(t=>`<span class="tag">⚠ ${t}</span>`).join('')}</div></div></div>
  <div class="big-st st ${L.c}" style="display:block">${stLabel(L,it)}</div>
- <div class="step" style="justify-content:center;margin-top:14px;gap:16px"><button onclick="qty('${it.id}',-1)">−</button><div class="q" style="font-size:24px">${it.qty}<span class="u" style="font-size:13px">${esc(it.unit)}</span></div><button onclick="qty('${it.id}',1)">+</button></div>
+ <div class="step" style="justify-content:center;margin-top:14px;gap:16px"><button onclick="qty('${it.id}',-1)">−</button><div class="q" style="font-size:24px" onclick="numEdit('${it.id}')">${it.qty}<span class="u" style="font-size:13px">${esc(it.unit)}</span></div><button onclick="qty('${it.id}',1)">+</button></div>
  ${it.kind==='调料'?`<div class="kv"><div>风味</div><div>${esc(it.group)}</div><div>适合</div><div>${esc(it.style)}</div><div>味道</div><div>${esc(it.taste)}</div></div>`:''}
  <details><summary>📅 保质期 & 存放</summary><div class="kv"><div>位置</div><div>${it.zone}区 · ${it.opened?'已开封':'未开封'}</div><div>入库</div><div>${it.intake}（${L.age??'-'} 天前）</div>
  <div>最佳赏味</div><div>${L.bb??'-'} 天内</div><div>最多存</div><div>${L.mx??'-'} 天</div><div>参考</div><div>${esc(r.t||'')}</div></div><div class="note">* 通用估算，以包装日期和闻/看为准。入库日期是记录日，实际购买可能更早。</div></details>
@@ -242,7 +249,7 @@ window.del=id=>{const it=byId(id);if(confirm('确定删除「'+it.name+'」？')
 function vAlert(k){const A=attention(),list=k==='bad'?A.bad:A.soon;
  return head(k==='bad'?'🔴 可能过期':'🟠 尽快吃',1)+`<main>${list.length?list.map(rowHTML).join(''):'<div class="empty">✅ 没有，放心</div>'}<div class="note">可能过期：先闻、看，不对就扔。尽快吃：这几天优先用它做饭。</div></main>`+navbar()}
 function vShop(){const L=DB.items.filter(i=>i.qty<=0||i.low);
- return head('🛒 购物清单',1)+`<main>${L.length?`<button class="primary" onclick="copyShop()">📋 复制清单（带俄文）</button><div style="height:14px"></div>`+L.map(it=>`<div class="row"><img class="ico" src="${icon(it,48)}"><div class="mid"><div class="nm">${esc(it.name)}</div><div class="sub">${esc(it.orig)}</div><span class="st ${it.qty<=0?'s-out':'s-low'}">${it.qty<=0?'用完了':'快用完'}</span></div><button style="flex:none;background:var(--g)" onclick="bought('${it.id}')">买到了</button></div>`).join(''):'<div class="empty">🎉 什么都不缺</div>'}</main>`+navbar('shop')}
+ return head('🛒 购物清单',1)+`<main>${L.length?`<button class="primary" onclick="copyShop()">📋 复制清单（带俄文）</button><div class="btop" style="margin-top:12px"><button onclick="shopAll()">${L.every(i=>state.ssel.has(i.id))?'取消全选':'全选'}</button><button style="background:var(--g)" ${state.ssel.size?'':'disabled'} onclick="buyMany()">✅ ${state.ssel.size||''} 样买到了</button></div>`+L.map(it=>`<div class="row ${state.ssel.has(it.id)?'sel':''}"><div class="bk ${state.ssel.has(it.id)?'on':''}" onclick="shopT('${it.id}')">${state.ssel.has(it.id)?'✓':''}</div><img class="ico" src="${icon(it,48)}" onclick="shopT('${it.id}')"><div class="mid"><div class="nm">${esc(it.name)}</div><div class="sub">${esc(it.orig)}</div><span class="st ${it.qty<=0?'s-out':'s-low'}">${it.qty<=0?'用完了':'快用完'}</span></div><button style="flex:none;background:var(--g)" onclick="bought('${it.id}')">买到了</button></div>`).join(''):'<div class="empty">🎉 什么都不缺</div>'}</main>`+navbar('shop')}
 window.copyShop=()=>copy('🛒 购物清单\n'+DB.items.filter(i=>i.qty<=0||i.low).map(i=>'□ '+i.name+(i.orig&&i.orig!==i.name?'（'+i.orig+'）':'')).join('\n'));
 window.bought=id=>{const it=byId(id);it.qty=Math.max(1,it.qty);it.low=false;it.intake=new Date().toISOString().slice(0,10);it.opened=false;bump();toast('✅ 已入库：'+it.name);render()};
 function vIntake(){return head('📸 进货',1)+`<main><div class="card px" style="font-size:18px;line-height:1.6">① 拍照发给 <b>神厨</b>（聊天里）<br>② 我帮你归类，发你新页面<br>③ 打开新页面，自动更新</div>
@@ -280,8 +287,37 @@ window.saveForm=id=>{const v=k=>document.getElementById('f-'+k).value.trim();if(
 function render(){const h=decodeURIComponent(location.hash.slice(1)),[v,a]=h.split('/');let out;
  if(v==='zone')out=vZone(a);else if(v==='item')out=vItem(a);else if(v==='shop')out=vShop();else if(v==='intake')out=vIntake();else if(v==='add')out=vForm();else if(v==='edit')out=vForm(a);else if(v==='alert')out=vAlert(a);else out=vHome();
  $('#app').innerHTML=out;if(v!=='zone'||!render.keep)window.scrollTo(0,0)}
+/* ===== QTY+BATCH v1 ===== */
+function fmtQ(n){return +(+n).toFixed(2)}
+function parseQ(t){t=String(t).trim().replace(',','.').replace('，','.');if(!/^\d*\.?\d+$|^\d+\.$/.test(t))return null;return Math.max(0,fmtQ(parseFloat(t)))}
+window.parseQ=parseQ;
+function setQ(it,n){const was=it.qty;it.qty=Math.max(0,fmtQ(n));if(it.qty>0&&was<=0)it.low=false}
+function numDlg(title,unit,val,cb){if(document.querySelector('.lockmask'))return;const m=document.createElement('div');m.className='lockmask';
+ m.innerHTML=`<div class="lockbox numbox px"><h2>${esc(title)}</h2><div class="err" id="nerr"></div><input id="nin" type="text" inputmode="decimal" autocomplete="off" value="${val}"><div class="u2">${esc(unit||'')}</div><div class="two2"><button class="x" id="nx" style="margin:0;min-height:60px">取消</button><button class="go" id="ngo">确定</button></div></div>`;
+ document.body.appendChild(m);const inp=m.querySelector('#nin');setTimeout(()=>{inp.focus();inp.select()},50);
+ const ok=()=>{const n=parseQ(inp.value);if(n===null){m.querySelector('#nerr').textContent='❌ 请输入数字，比如 2 或 0.5';inp.select();return}m.remove();cb(n)};
+ m.querySelector('#ngo').onclick=ok;inp.onkeydown=e=>{if(e.key==='Enter')ok();if(e.key==='Escape')m.remove()};m.querySelector('#nx').onclick=()=>m.remove();m.onclick=e=>{if(e.target===m)m.remove()}}
+window.numEdit=id=>{const it=byId(id);numDlg('✏️ '+it.name,it.unit,it.qty,n=>setQty(id,n))};
+window.setQty=(id,n)=>{const it=byId(id);setQ(it,n);bump();toast(it.name+' → '+(it.qty<=0?'用完了':it.qty+' '+it.unit));render()};
+let UNDO=null;
+function toastU(t){document.querySelectorAll('.toast').forEach(x=>x.remove());const d=document.createElement('div');d.className='toast';d.textContent=t;const b=document.createElement('button');b.className='ud';b.textContent='↩ 撤销';b.onclick=()=>{d.remove();undo()};d.appendChild(b);document.body.appendChild(d);setTimeout(()=>d.remove(),6000)}
+window.undo=()=>{if(!UNDO)return;DB.items=JSON.parse(UNDO);UNDO=null;bump();toast('↩ 已撤销');render()};
+function snap(){UNDO=JSON.stringify(DB.items)}
+window.batchT=()=>{state.batch=!state.batch;state.sel.clear();render.keep=1;render();render.keep=0};
+window.selT=id=>{state.sel.has(id)?state.sel.delete(id):state.sel.add(id);render.keep=1;render();render.keep=0};
+window.selAll=z=>{const ids=DB.items.filter(i=>i.zone===z).map(i=>i.id);if(ids.every(i=>state.sel.has(i)))state.sel.clear();else ids.forEach(i=>state.sel.add(i));render.keep=1;render();render.keep=0};
+function selItems(){return DB.items.filter(i=>state.sel.has(i.id))}
+window.bOp=(op,v)=>{const L=selItems();if(!L.length)return;
+ if(op==='del'&&!confirm('确定删除这 '+L.length+' 样？\n'+L.map(i=>'· '+i.name).join('\n')))return;
+ snap();if(op==='add')L.forEach(it=>setQ(it,it.qty+v));else if(op==='set')L.forEach(it=>setQ(it,v));else if(op==='out')L.forEach(it=>setQ(it,0));else if(op==='del'){DB.items=DB.items.filter(i=>!state.sel.has(i.id));state.sel.clear()}
+ bump();render.keep=1;render();render.keep=0;toastU(op==='add'?L.length+' 样 '+(v>0?'+':'')+v:op==='set'?L.length+' 样 → '+v:op==='out'?L.length+' 样已用完':'🗑️ 已删 '+L.length+' 样')};
+window.bSet=()=>{const n=state.sel.size;if(!n)return;numDlg('设为… （'+n+' 样）','',1,v=>bOp('set',v))};
+window.shopT=id=>{state.ssel.has(id)?state.ssel.delete(id):state.ssel.add(id);render.keep=1;render();render.keep=0};
+window.shopAll=()=>{const L=DB.items.filter(i=>i.qty<=0||i.low).map(i=>i.id);if(L.every(i=>state.ssel.has(i)))state.ssel.clear();else L.forEach(i=>state.ssel.add(i));render.keep=1;render();render.keep=0};
+window.buyMany=()=>{const L=DB.items.filter(i=>state.ssel.has(i.id));if(!L.length)return;snap();const d=new Date().toISOString().slice(0,10);L.forEach(it=>{it.qty=Math.max(1,it.qty);it.low=false;it.intake=d;it.opened=false});state.ssel.clear();bump();render();toastU('✅ '+L.length+' 样已入库')};
+window.addEventListener('hashchange',()=>{if(!location.hash.startsWith('#zone')){state.batch=false;state.sel.clear()}state.ssel.clear()});
 /* ===== EDIT-LOCK v1 ===== */
-const LOCK={"salt": "ae45e9390587aec06bb9e7916f0c113b", "iter": 100000, "hash": "30c50f2cd050e47dceb4034bc0ee67783b160417edfc9b4a6b75bd136b6fb010"},LKS='shenchu-unlocked';
+const LOCK={"salt": "dae67781fa141f02e7dd9379efe8f630", "iter": 100000, "hash": "bebc943996294b6e15c5391027eed3b2bfbe02ae8fb8fe63810b19577e996050"},LKS='shenchu-unlocked';
 function unlocked(){return sessionStorage.getItem(LKS)===LOCK.hash}
 function LOCKBTN(){return unlocked()?`<button class="lk un" onclick="relock()">🔓 上锁</button>`:`<button class="lk" onclick="askUnlock()" aria-label="解锁编辑">🔒</button>`}
 function hx(b){return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
@@ -299,10 +335,13 @@ window.askUnlock=(after)=>{pending=typeof after==='function'?after:null;if(docum
  m.querySelector('#lkgo').onclick=tryIt;inp.onkeydown=e=>{if(e.key==='Enter')tryIt()};m.querySelector('#lkx').onclick=()=>{pending=null;close()}};
 window.relock=()=>{sessionStorage.removeItem(LKS);applyLock();toast('🔒 已上锁');render()};
 function applyLock(){document.body.classList.toggle('locked',!unlocked())}
-['qty','toggle','del','bought','importDB','restore','saveForm'].forEach(n=>{const f=window[n];window[n]=(...a)=>{if(unlocked())return f(...a);askUnlock(()=>f(...a))}});
+['qty','toggle','del','bought','importDB','restore','saveForm','numEdit','setQty','batchT','bOp','bSet','buyMany','undo'].forEach(n=>{const f=window[n];window[n]=(...a)=>{if(unlocked())return f(...a);askUnlock(()=>f(...a))}});
 const _render=render;render=function(){const h=decodeURIComponent(location.hash.slice(1)),v=h.split('/')[0];
  if(h==='unlock'){if(!unlocked()){location.hash.length;history.replaceState(null,'','#');_render();applyLock();askUnlock();return}history.replaceState(null,'','#')}
  if((v==='add'||v==='edit')&&!unlocked()){const t=h;history.replaceState(null,'','#');_render();applyLock();askUnlock(()=>go(t));return}
  _render();applyLock()};
+(function(){const q=new URLSearchParams(location.search);if(q.get('t')==='batch'){state.batch=true;(q.get('sel')||'').split(',').filter(Boolean).forEach(i=>state.sel.add(i))}
+ if(q.get('t')==='shop'){(q.get('sel')||'').split(',').filter(Boolean).forEach(i=>state.ssel.add(i))}
+ if(q.get('t')==='num')setTimeout(()=>{const it=byId(q.get('id'));numDlg('✏️ '+it.name,it.unit,it.qty,()=>{})},100)})();
 render();
 </script></body></html>
