@@ -380,10 +380,10 @@ function rRank(ids,mode,cat){return ids.map(id=>RBY[id]).filter(Boolean).sort((a
 function rCard(r){const m=rMissList(r);return`<button class="rcard" onclick="go('recipe/${r.id}')"><img class="ri" src="${pxURL('r:'+r.id,56)}" alt=""><span class="rt"><div class="rn">${esc(shortN(r.name))}</div><div class="rm">⏱ ${r.time>=120?Math.round(r.time/6)/10+' 小时':r.time+' 分钟'} · ${esc(r.method)}</div>${kBadge(r.nut)}${r.cut?`<span class="rcut"><img src="${pxURL('cut:'+r.cut,32)}" alt="">${esc(r.cut)}</span>`:''}</span><span class="rb ${m.length?'no':'ok'}">${m.length?'缺：'+esc(m[0])+(m.length>1?' 等'+m.length+'样':''):'✅ 能做'}</span></button>`}
 
 /* ===== v5g 营养 ===== */
-function nutHi(n){return n&&(n.pct.f>35||n.kcal>800)}
+function nutHi(n){return n&&(n.pct.f>45||n.kcal>800)}
 function kBadge(n){return n?`<span class="kb ${nutHi(n)?'hi':''}">🔥 ${n.kcal} kcal</span>`:''}
 function nutBlock(n){if(!n)return'';const B=[['蛋白','p','#3a7bd5'],['脂肪','f','#e0a040'],['碳水','c','#178a5a']];
- const w=[];if(n.pct.f>35)w.push(`脂肪占 ${n.pct.f}% 能量，偏高（>35%）`);if(n.kcal>800)w.push(`一顿 ${n.kcal} kcal，超过 800`);
+ const w=[];if(n.pct.f>45)w.push(`脂肪占 ${n.pct.f}% 能量，偏高（>45%）`);if(n.kcal>800)w.push(`一顿 ${n.kcal} kcal，超过 800`);
  return`<div class="nut"><div class="kc"><b>${n.kcal}</b><span>kcal · 1 人份</span>${n.rice?`<small>+米饭(70g生米) ≈ ${n.kcal+n.rice} kcal</small>`:''}${n.withRice?`<small>已含米饭 ${n.withRice} kcal</small>`:''}</div>
  ${B.map(([t,k,c])=>`<div class="nbar"><span>${t}</span><span class="tr" style="--c:${c}"><i style="width:${Math.min(100,n.pct[k])}%"></i></span><em>${n[k]} 克 · ${n.pct[k]}%</em></div>`).join('')}
  ${w.length?`<div class="nwarn">⚠️ 脂肪肝注意：${w.join('；')}。少吃一点或配蔬菜。</div>`:''}
@@ -578,7 +578,7 @@ window.shopAll=()=>{const L=DB.items.filter(i=>i.qty<=0||i.low).map(i=>i.id);if(
 window.buyMany=()=>{const L=DB.items.filter(i=>state.ssel.has(i.id));if(!L.length)return;snap();const d=new Date().toISOString().slice(0,10);L.forEach(it=>{it.qty=Math.max(1,it.qty);it.low=false;it.intake=d;it.opened=false});state.ssel.clear();bump();render();toastU('✅ '+L.length+' 样已入库')};
 window.addEventListener('hashchange',()=>{if(!location.hash.startsWith('#zone')){state.batch=false;state.sel.clear()}state.ssel.clear()});
 /* ===== GLOBAL LOCK v5：默认只能看；首页左上角的锁主动解锁 ===== */
-const LOCK={"salt": "a4ee7a798a7706ba684d856c962b7982", "iter": 100000, "hash": "f341cab527c9855e5436e03def3fe94d21d7cd373d7eac630e471c80b9f5bfa0"},LKS='shenchu-unlocked';
+const LOCK={"salt": "0b86602c29f9bc0822405688cfdfddaf", "iter": 100000, "hash": "572d86b6f1ff49a00379b5bb0bf91318981b3bb7a47f2c60db3fa32835460c2e"},LKS='shenchu-unlocked';
 function unlocked(){return sessionStorage.getItem(LKS)===LOCK.hash}
 const LOCKPX={c:["...kkkkkk...","..kwwwwwwk..","..kw.kk.wk..","..kw.kk.wk..","..kw....wk..","kkkkkkkkkkkk","kyyyyyyyyyyk","kyyyykkyyyyk","kyyyykkyyyyk","kyyyyykyyyyk","kyyyyyyyyyyk","kkkkkkkkkkkk"],
 o:["...kkkkkk...","..kwwwwwwk..","..kw.kk.wk..","..kw.kk.wk..","..kw.......","..kw........","kkkkkkkkkkkk","kgggggggggk.","kggggkkgggk.","kgggggkgggk.","kgggggggggk.","kkkkkkkkkkk."]};
