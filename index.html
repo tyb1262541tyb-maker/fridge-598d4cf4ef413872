@@ -957,7 +957,7 @@ window.bOp=(op,v)=>{const L=selItems();if(!L.length)return;
 window.bSet=()=>{const n=state.sel.size;if(!n)return;numDlg('设为… （'+n+' 样）','',1,v=>bOp('set',v))};
 window.addEventListener('hashchange',()=>{if(!location.hash.startsWith('#zone')){state.batch=false;state.sel.clear()}state.ssel.clear()});
 /* ===== GLOBAL LOCK v5：默认只能看；首页左上角的锁主动解锁 ===== */
-const LOCK={"salt": "5ff0f4e885db0d87b20703b2df3cf1fc", "iter": 100000, "hash": "69861837caa2daa4e8064981096302bba8874ae57baabb9b397645363fb453c1"},LKS='shenchu-unlocked';
+const LOCK={"salt": "2f530fbf57a1ce0316493099cd19f81e", "iter": 100000, "hash": "0179eb342c77ee1d82279a792c5b8bee9024c2e3d2897700d94b315aa01d8e69"},LKS='shenchu-unlocked';
 function unlocked(){return sessionStorage.getItem(LKS)===LOCK.hash||(localStorage.getItem(LKS+'-dev')===LOCK.hash&&!sessionStorage.getItem(LKS+'-off'))}
 const LOCKPX={c:["...kkkkkk...","..kwwwwwwk..","..kw.kk.wk..","..kw.kk.wk..","..kw....wk..","kkkkkkkkkkkk","kyyyyyyyyyyk","kyyyykkyyyyk","kyyyykkyyyyk","kyyyyykyyyyk","kyyyyyyyyyyk","kkkkkkkkkkkk"],
 o:["...kkkkkk...","..kwwwwwwk..","..kw.kk.wk..","..kw.kk.wk..","..kw.......","..kw........","kkkkkkkkkkkk","kgggggggggk.","kggggkkgggk.","kgggggkgggk.","kgggggggggk.","kkkkkkkkkkk."]};
@@ -1616,7 +1616,7 @@ window.acClr=d=>{delete FIT.act[d];fsave();document.querySelector('.sheetov')?.r
 
 /* v6k 健康导入：?hk=1&date=&active=&weight=  只写活动能量/体重两项，不需要解锁 */
 (function(){try{const q=new URLSearchParams(location.search);if(!q.has('hk'))return;
- const num=s=>{if(s==null)return null;s=String(s).replace(/\s|\u00a0/g,'').replace(',','.').replace(/[^\d.]/g,'');if(!s)return null;const v=parseFloat(s);return isFinite(v)?v:null};
+ const num=s=>{if(s==null)return null;s=String(s).replace(/\s|\u00a0|\u202f|'/g,'');if(/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s))s=s.replace(/,/g,'');s=s.replace(',','.').replace(/[^\d.]/g,'');if(!s)return null;const v=parseFloat(s);return isFinite(v)?v:null};
  let d=(q.get('date')||'').trim();const m=d.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);d=m?m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0'):dk();
  const a=num(q.get('active')),w=num(q.get('weight')),msg=[],now=Date.now();
  if(a!=null&&a>=0&&a<=5000){FIT.act[d]={kcal:Math.round(a),at:now};msg.push('活动 '+Math.round(a)+' kcal')}
