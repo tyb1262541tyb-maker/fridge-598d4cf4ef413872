@@ -553,6 +553,36 @@ canvas.mf.l3dh{display:none!important}img.l3d{display:block;width:100%;aspect-ra
 .tgtg{display:grid;grid-template-columns:1fr 7.5em;gap:8px 10px;align-items:center;margin:8px 0}.tgtg label{font-weight:800;margin:0}.tgtg label small{color:var(--mute);font-weight:600}.tgtg input{min-height:44px;font-size:17px;text-align:center;border-radius:12px;border:2px solid var(--line);background:#fff;color:var(--ink);min-width:0}
 .tgdef{display:block;width:100%;min-height:44px;margin:4px 0 10px;background:var(--grass2)!important;color:var(--grass-d)!important}
 .bdg.fbb{background:#dff5ea}.wmf.fbf{background:var(--mint,#4fbf9a)}
+.toast{z-index:1200!important}
+.esh{border-radius:26px 26px 0 0!important;padding:10px 16px calc(18px + env(safe-area-inset-bottom))!important;max-height:92vh!important}
+.egrab{width:46px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 10px}
+.esh h3{border:0!important;font-size:19px;color:var(--ink);padding:0!important;margin:0 0 2px!important;line-height:1.3}
+.esub{color:var(--mute);font-size:14px;font-weight:600;margin:0 0 6px}
+.elab{font-weight:900;color:var(--grass-d);margin:14px 0 6px;font-size:15px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}.elab small{color:var(--mute);font-weight:600;font-size:13px}
+.eseg{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;background:var(--grass2);padding:4px;border-radius:999px}
+.eseg button{min-height:44px!important;padding:0 2px!important;font-size:15px!important;border-radius:999px!important;background:transparent!important;box-shadow:none!important;color:var(--grass-d)!important;white-space:nowrap}
+.eseg button.on{background:var(--grass)!important;color:#fff!important;box-shadow:0 3px 0 var(--grass-d)!important}
+.emv:empty{display:none}.emv{min-height:20px;font-size:14px;color:var(--grass-d);font-weight:800;margin:6px 2px 0}
+.estep{display:grid;grid-template-columns:64px 1fr 64px;gap:10px;align-items:center}
+.estep button,.eq button{border-radius:999px!important;background:var(--sky2)!important;color:var(--sky-d)!important;box-shadow:0 4px 0 #b6dcef!important;padding:0!important}
+.estep button{height:60px;font-size:20px!important}
+.enum{display:flex;align-items:center;justify-content:center;background:#fff;border-radius:20px;box-shadow:var(--sh2);height:66px;padding:0 12px;gap:4px}
+.enum input{flex:1;width:100%;min-width:0;border:0!important;background:transparent;font-size:36px;font-weight:900;text-align:right;color:var(--ink);font-family:"PX",var(--font)!important;height:60px;padding:0;outline:0!important}
+.enum span{font-weight:800;color:var(--mute);font-size:17px;flex:none}
+.eq{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0 0}.eq button{min-height:44px;font-size:16px!important}
+.epre{display:flex;gap:6px;margin:10px 0 0}.epre button{flex:1;min-height:42px;padding:0 2px!important;background:var(--sun)!important;color:var(--ink)!important;border-radius:999px!important;box-shadow:0 3px 0 #e9cf74!important;font-size:15px!important}
+.epre button.on{background:var(--orange)!important;color:#fff!important;box-shadow:0 3px 0 var(--orange-d)!important}
+.esh .cmode{margin:0 0 10px}
+.elive{background:#fff;border-radius:20px;box-shadow:var(--sh1);padding:10px 12px;margin:14px 0 12px;min-height:76px}
+.elive .gbig{font-size:34px}.elive .was{color:var(--mute);font-size:14px;font-weight:700;margin:2px 0 6px}.elive .up{color:var(--orange-d)}.elive .dn{color:var(--grass-d)}
+.esh .two button{min-height:50px}
+.efoot{display:flex;gap:8px;margin-top:14px}.efoot button{flex:1;min-height:44px;font-size:15px!important;border-radius:999px!important}
+.efoot .elink{background:var(--sky2)!important;color:var(--sky-d)!important;box-shadow:0 3px 0 #b6dcef!important}
+.edel{background:var(--berry2);border-radius:20px;padding:12px;margin-top:12px;text-align:center;color:#b8423c;font-weight:800}
+.edel .two{margin-top:10px}.edel .ego{background:var(--berry)!important;color:#fff!important;box-shadow:0 4px 0 #b8423c!important;border-radius:999px!important}
+.esh button:disabled{opacity:.45}
+.efoot[hidden],.edel[hidden]{display:none!important}.esh .enum input.eg,.esh .enum input.eg:focus{border:0!important;box-shadow:none!important;background:transparent!important;outline:0!important;border-radius:0!important}.enum:focus-within{box-shadow:0 0 0 3px var(--sky),var(--sh2)}
+.esh .locknote{border-radius:14px;border:2px dashed var(--line)!important;background:var(--sun)!important}
 .wkbtn{display:block;width:100%;min-height:52px;font-size:18px;margin:0 0 12px}
 /* v6l 常见 */
 .bdg.cmn{background:var(--sky2)!important;color:var(--sky-d)!important}.bdg.pH{background:var(--berry2)!important}
@@ -963,7 +993,7 @@ window.bOp=(op,v)=>{const L=selItems();if(!L.length)return;
 window.bSet=()=>{const n=state.sel.size;if(!n)return;numDlg('设为… （'+n+' 样）','',1,v=>bOp('set',v))};
 window.addEventListener('hashchange',()=>{if(!location.hash.startsWith('#zone')){state.batch=false;state.sel.clear()}state.ssel.clear()});
 /* ===== GLOBAL LOCK v5：默认只能看；首页左上角的锁主动解锁 ===== */
-const LOCK={"salt": "74c932a7c525d9ad9906041ac3cc59dd", "iter": 100000, "hash": "d3e4ac0ff220c2d340e857d9613d24a85871495ccb25cf13945530d3d48a32a5"},LKS='shenchu-unlocked';
+const LOCK={"salt": "4ebbe210042338a6408766d6eb0f7070", "iter": 100000, "hash": "9dd104ad284a39ef7a5cba5ee0bb10b5a0be912b9781628653d4c4ca025b1fa3"},LKS='shenchu-unlocked';
 function unlocked(){return sessionStorage.getItem(LKS)===LOCK.hash||(localStorage.getItem(LKS+'-dev')===LOCK.hash&&!sessionStorage.getItem(LKS+'-off'))}
 const LOCKPX={c:["...kkkkkk...","..kwwwwwwk..","..kw.kk.wk..","..kw.kk.wk..","..kw....wk..","kkkkkkkkkkkk","kyyyyyyyyyyk","kyyyykkyyyyk","kyyyykkyyyyk","kyyyyykyyyyk","kyyyyyyyyyyk","kkkkkkkkkkkk"],
 o:["...kkkkkk...","..kwwwwwwk..","..kw.kk.wk..","..kw.kk.wk..","..kw.......","..kw........","kkkkkkkkkkkk","kgggggggggk.","kggggkkgggk.","kgggggkgggk.","kgggggggggk.","kkkkkkkkkkk."]};
@@ -1513,7 +1543,7 @@ function entryTarget(e){const s=e.src||'';if(s.startsWith('recipe:')&&RBY[s.slic
  return it?"go('item/"+it.id+"')":"entrySheet('"+e.id+"')"}
 window.entrySheet=id=>{const e=dayLog().find(x=>x.id===id);if(!e)return;const ov=document.createElement('div');ov.className='sheetov';ov.onclick=ev=>{if(ev.target===ov)ov.remove()};
  ov.innerHTML=`<div class="sheet"><h3>${esc(e.name)}</h3><div class="kv"><div>热量</div><div>${e.kcal??'?'} kcal</div><div>蛋白质</div><div>${e.p??'?'} g</div><div>脂肪</div><div>${e.f??'?'} g</div><div>碳水</div><div>${e.c??'?'} g</div><div>纤维</div><div>${e.fb??'?'} g</div></div><div class="note">这条不在厨房里（自定义/食物库），所以没有备菜页。</div><button class="primary" onclick="this.closest('.sheetov').remove()">好了</button></div>`;document.body.appendChild(ov)};
-function entryRow(e){return`<div class="swr fe" data-fid="${e.id}"><div class="row lrow"><button class="mid etap" onclick="${entryTarget(e)}"><div class="nm">${esc(e.name)} <span class="go">›</span></div><div class="bdgs"><span class="bdg kb"><i class="bi">🔥</i><b>${e.kcal??'?'} kcal</b></span><span class="bdg"><b>蛋白 ${e.p??'?'}</b></span><span class="bdg"><b>脂 ${e.f??'?'}</b></span><span class="bdg"><b>碳 ${e.c??'?'}</b></span>${e.fb!=null?`<span class="bdg fbb"><b>纤 ${e.fb}</b></span>`:''}</div></button>${unlocked()?`<button class="hvd" onclick="fitDel('${e.id}')" aria-label="删除">🗑️</button>`:''}</div></div>`}
+function entryRow(e){return`<div class="swr fe" data-fid="${e.id}"><div class="row lrow"><button class="mid etap" onclick="eEdit('${e.id}')"><div class="nm">${esc(e.name)} <span class="go">✏️</span></div><div class="bdgs"><span class="bdg kb"><i class="bi">🔥</i><b>${e.kcal??'?'} kcal</b></span><span class="bdg"><b>蛋白 ${e.p??'?'}</b></span><span class="bdg"><b>脂 ${e.f??'?'}</b></span><span class="bdg"><b>碳 ${e.c??'?'}</b></span>${e.fb!=null?`<span class="bdg fbb"><b>纤 ${e.fb}</b></span>`:''}</div></button>${unlocked()?`<button class="hvd" onclick="fitDel('${e.id}')" aria-label="删除">🗑️</button>`:''}</div></div>`}
 function vToday(){const out=vToday0(),L=dayLog(),t=sumL(L);return out.replace('<div class="rh">🏋️ 今天的训练</div>',recBlock(L,t)+'<div class="rh">🏋️ 今天的训练</div>')}
 function itemFacts(it){const n=nutFb(it);return`<div class="ifact"><span class="bdg ${it.qty>0?'have':'out'}"><b>${it.qty>0?'✅ 有':'⭕ 用完'}</b></span>${n?`<span class="bdg kb"><i class="bi">🔥</i><b>${n.kcal} kcal</b></span><span class="bdg"><b>蛋白 ${n.p}</b></span><span class="bdg"><b>脂 ${n.f}</b></span><span class="bdg"><b>碳 ${n.c}</b></span>${n.fb!=null?`<span class="bdg fbb"><b>🌿 纤 ${n.fb}</b></span>`:''}<small>每 100 克</small>`:'<small>暂无营养数据</small>'}</div>`}
 
@@ -1691,6 +1721,74 @@ window.tgtSave=()=>{const o={};for(const[k,l,u,a,b]of TGF){const v=parseFloat(St
 {const f=window.tgtSave;window.tgtSave=(...a)=>{if(unlocked())return f(...a);toast('🔒 只能看：先点首页左上角的锁')}}
 /* 同步拉到旧版本的目标（没有 tgtV）时再迁移一次 */
 {const _sa=syApply;syApply=function(doc){const s=doc&&doc.recs&&doc.recs.s,old=!!(s&&!s.del&&s.d&&!s.d.tgtV);const x=_sa(doc);if(old){const was=FIT.prot===130&&FIT.fat===60&&FIT.carb===200;FIT.tgtV=0;tgtMig();if(was)setTimeout(()=>fsave(),0)}return x}}
+
+/* ===== v6v 改记录：换餐次 + 改克数（同一个 shenchu-fit 结构；只在改过的条目上加 base/grams/mode/q，旧条目照常用） ===== */
+const EU_RE=/(熟)?(\d+(?:[.,]\d+)?)\s*(g|克|ml|毫升)(?![a-z])/gi;
+function eFind(id,day){const k=day||dk(),L=FIT.log[k]||[];return{k,L,e:L.find(x=>x.id===id)}}
+function eAmt(e){const s=e.src||'',key=s.startsWith('item:')?'i:'+s.slice(5):s;let f=null;
+ if(/^(i|s|cat):/.test(key)){try{f=foodList().find(x=>x.key===key)||null}catch(_){}}
+ const yd=f&&f.nut&&f.yd||null,all=[...String(e.name||'').matchAll(EU_RE)],m=all.length?all[all.length-1]:null;
+ let g=e.grams,mode=e.mode||'raw';if(g==null&&m){g=parseFloat(m[2].replace(',','.'));if(!e.mode&&m[1])mode='cooked'}
+ if(e.base&&e.base.g>0&&g==null)g=e.base.g;
+ if(g>0)return{kind:'g',g,unit:m&&/ml|毫升/i.test(m[3])?'ml':'克',mode:yd?mode:'raw',f,yd,m};
+ return{kind:'q',g:e.q||1,unit:'份',mode:'raw',f:null,yd:null,m:null}}
+function eBasis(g,mode,yd){if(!yd)return g;return yd.base==='cooked'?(mode==='raw'?g*yd.y:g):(mode==='cooked'?g/yd.y:g)}
+function eBase(e,a){return e.base||{g:a.g,mode:a.mode,kcal:e.kcal??null,p:e.p??null,f:e.f??null,c:e.c??null,fb:e.fb??null}}
+function eCalc(e,a,g,mode){const b=eBase(e,a),den=eBasis(b.g,b.mode||'raw',a.yd),bas=eBasis(g,mode,a.yd),r=den>0?bas/den:0,k=x=>x==null?null:r1(x*r);
+ let fb=k(b.fb);if(fb==null&&a.f&&a.f.nut&&a.f.nut.fb!=null)fb=r1(a.f.nut.fb*bas/100);
+ return{kcal:b.kcal==null?null:Math.round(b.kcal*r),p:k(b.p),f:k(b.f),c:k(b.c),fb}}
+function eName(e,a,g,mode){const nm=String(e.name||''),gs=String(Math.round(g*10)/10);
+ if(a.kind==='q')return nm.replace(/\s*×[\d.]+$/,'')+(g!==1?' ×'+gs:'');
+ if(!a.m)return nm+' '+(a.yd&&mode==='cooked'?'熟':'')+gs+'g';
+ const pre=a.yd?(mode==='cooked'?'熟':''):(a.m[1]||'');return nm.slice(0,a.m.index)+pre+gs+a.m[3]+nm.slice(a.m.index+a.m[0].length)}
+function eRe(){render.keep=1;render();render.keep=0}
+function eWhen(e,k){const t=parseInt(String(e.id).slice(1,9),36);const day=k===dk()?'今天':k.slice(5).replace('-','/');return day+(t>1.6e12&&t<4e12?' '+new Date(t).toTimeString().slice(0,5)+' 记的':'')}
+window.eEdit=(id,day)=>{const{k,e}=eFind(id,day);if(!e)return;document.querySelector('.sheetov')?.remove();
+ const a=eAmt(e),lk=!unlocked(),dis=lk?' disabled':'',tgt=entryTarget(e),hasT=!/^entrySheet/.test(tgt);let mode=a.mode,cur=a.g;
+ const isQ=a.kind==='q',D=isQ?[-1,-.25,.25,1]:[-50,-5,5,50],BIG=isQ?.5:10,PRE=isQ?[.5,1,1.5,2]:(a.unit==='ml'?[100,200,250,300]:[50,100,150,200,250]);
+ const fmt=v=>(v>0?'+':'−')+Math.abs(v);
+ const ov=document.createElement('div');ov.className='sheetov';ov.onclick=ev=>{if(ev.target===ov)ov.remove()};
+ ov.innerHTML=`<div class="sheet esh" role="dialog" aria-label="改这条记录"><div class="egrab"></div><h3>${esc(e.name)}</h3><div class="esub">${eWhen(e,k)}</div>
+ ${lk?'<div class="locknote">🔒 只能看：先点首页左上角的锁，才能改</div>':''}
+ <div class="elab">🍽 放在哪一顿？<small>点一下马上换</small></div>
+ <div class="eseg">${Object.keys(MEALS).map(m=>`<button type="button" data-m="${m}" class="${m===e.meal?'on':''}"${dis}>${MEALS[m]}</button>`).join('')}</div><div class="emv" aria-live="polite"></div>
+ <div class="elab">${isQ?'🍲 吃了几份？':'⚖️ 吃了多少？'}<small>${isQ?'按记下时的 1 份算':'改完点保存'}</small></div>
+ ${a.yd?`<div class="cmode"><button type="button" data-c="raw"${dis}>${a.yd.grain?'🌾 生重（干）':'🥩 生重'}</button><button type="button" data-c="cooked"${dis}>${a.yd.grain?'🍚 熟重':'🍖 熟重'}</button></div>`:''}
+ <div class="estep"><button type="button" data-d="${-BIG}" aria-label="减 ${BIG}"${dis}>−${BIG}</button><label class="enum"><input class="eg" type="text" inputmode="decimal" autocomplete="off" value="${cur}" aria-label="${isQ?'份数':'克数'}"${dis}><span>${a.unit}</span></label><button type="button" data-d="${BIG}" aria-label="加 ${BIG}"${dis}>+${BIG}</button></div>
+ <div class="eq">${D.map(d=>`<button type="button" data-d="${d}"${dis}>${fmt(d)}</button>`).join('')}</div>
+ <div class="epre">${PRE.map(g=>`<button type="button" data-g="${g}"${dis}>${g}${isQ?' 份':''}</button>`).join('')}</div>
+ <div class="elive" aria-live="polite"></div>
+ <div class="two"><button type="button" class="ex">关闭</button><button type="button" class="primary esave"${dis}>💾 保存</button></div>
+ <div class="efoot">${hasT?`<button type="button" class="elink">📖 ${/recipe/.test(tgt)?'看菜谱':'看食材'} ›</button>`:''}<button type="button" class="hvd edl"${dis}>🗑️ 删除这条</button></div>
+ <div class="edel" hidden>确定删掉「${esc(e.name)}」吗？<div class="two"><button type="button" class="enx">不删</button><button type="button" class="ego">🗑️ 删掉</button></div></div></div>`;
+ document.body.appendChild(ov);const Q=x=>ov.querySelector(x),inp=Q('.eg'),live=Q('.elive');
+ const val=()=>{const v=parseFloat(String(inp.value).replace(',','.'));return v>0?v:0};
+ const upd=()=>{const g=val();ov.querySelectorAll('.cmode button').forEach(b=>b.classList.toggle('on',b.dataset.c===mode));ov.querySelectorAll('.epre button').forEach(b=>b.classList.toggle('on',+b.dataset.g===g));
+  if(!(g>0)){live.innerHTML=`<div class="sl">输入${isQ?'份数':'克数'}，热量马上算出来</div>`;Q('.esave').disabled=true;return}
+  const v=eCalc(e,a,g,mode),dk_=(v.kcal??0)-(e.kcal??0),same=g===a.g&&mode===a.mode;Q('.esave').disabled=lk||same;
+  live.innerHTML=`<div class="gbig">${v.kcal??'?'} <small>kcal</small></div><div class="was">${same?'跟现在一样':`原来 ${e.kcal??'?'} kcal · <span class="${dk_>0?'up':'dn'}">${dk_>0?'+':''}${dk_} kcal</span>`}</div><span class="bdgs"><span class="bdg"><b>蛋白 ${v.p??'?'}</b></span><span class="bdg"><b>脂 ${v.f??'?'}</b></span><span class="bdg"><b>碳 ${v.c??'?'}</b></span><span class="bdg fbb"><b>🌿 纤 ${v.fb??'?'}</b></span></span>${a.yd&&mode==='cooked'?`<div class="sl">熟重 ${g} 克 ≈ ${a.yd.grain?'干':'生'}重 ${Math.round(a.yd.base==='cooked'?g/a.yd.y:eBasis(g,mode,a.yd))} 克</div>`:''}`};
+ const setV=v=>{v=Math.max(isQ?.25:1,Math.min(isQ?20:5000,Math.round(v*100)/100));inp.value=v;upd()};
+ ov.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>setV((val()||0)+(+b.dataset.d)));
+ ov.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>setV(+b.dataset.g));
+ ov.querySelectorAll('.cmode button').forEach(b=>b.onclick=()=>{mode=b.dataset.c;upd()});
+ inp.oninput=upd;inp.onfocus=()=>setTimeout(()=>inp.select(),0);inp.onkeydown=ev=>{if(ev.key==='Enter'){ev.preventDefault();Q('.esave').click()}};
+ ov.querySelectorAll('.eseg button').forEach(b=>b.onclick=()=>eMove(id,k,b.dataset.m,ov));
+ Q('.ex').onclick=()=>ov.remove();
+ Q('.esave').onclick=()=>{const g=val();if(!(g>0))return inp.focus();eSave(id,k,g,mode,a);ov.remove()};
+ if(hasT)Q('.elink').onclick=()=>{ov.remove();new Function(tgt)()};
+ Q('.edl').onclick=()=>{if(!unlocked())return toast('🔒 只能看：先点首页左上角的锁');Q('.edel').hidden=false;Q('.efoot').hidden=true;Q('.edel').scrollIntoView({block:'nearest'})};
+ Q('.enx').onclick=()=>{Q('.edel').hidden=true;Q('.efoot').hidden=false};
+ Q('.ego').onclick=()=>{ov.remove();eDel(id,k)};
+ upd()};
+window.eMove=(id,day,m,ov)=>{if(!unlocked())return toast('🔒 只能看：先点首页左上角的锁');const{e}=eFind(id,day);if(!e||!MEALS[m]||e.meal===m)return;const was=e.meal;e.meal=m;
+ if(MFOLD[m]){MFOLD[m]=false;try{localStorage.setItem('shenchu-mealfold',JSON.stringify(MFOLD))}catch(_){}}
+ fsave();eRe();if(ov){ov.querySelectorAll('.eseg button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));const t=ov.querySelector('.emv');if(t)t.textContent='✓ 已从 '+(MEALS[was]||'?')+' 移到 '+MEALS[m]}};
+window.eSave=(id,day,g,mode,a)=>{if(!unlocked())return toast('🔒 只能看：先点首页左上角的锁');const{e}=eFind(id,day);if(!e)return;a=a||eAmt(e);
+ const old=JSON.parse(JSON.stringify(e)),v=eCalc(e,a,g,mode);e.base=eBase(e,a);Object.assign(e,v,{name:eName(e,a,g,mode)});
+ if(a.kind==='q')e.q=g;else{e.grams=g;if(a.yd)e.mode=mode}
+ fsave();window.__fitUndo=()=>{const x=eFind(id,day).e;if(x){Object.keys(x).forEach(k=>delete x[k]);Object.assign(x,old)}fsave();eRe()};eRe();fToastU('✅ 改好了 · '+(v.kcal??'?')+' kcal')};
+window.eDel=(id,day)=>{if(!unlocked())return toast('🔒 只能看：先点首页左上角的锁');const{k,L,e}=eFind(id,day);if(!e)return;const i=L.indexOf(e);FIT.log[k]=L.filter(x=>x.id!==id);fsave();
+ window.__fitUndo=()=>{const A=FIT.log[k]=FIT.log[k]||[];if(!A.some(x=>x.id===id))A.splice(Math.min(i,A.length),0,e);fsave();eRe()};eRe();fToastU('🗑️ 已删「'+e.name+'」')};
 
 render();
 </script></body></html>
