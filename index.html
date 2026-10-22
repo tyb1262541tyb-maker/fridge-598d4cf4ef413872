@@ -1000,7 +1000,7 @@ window.bOp=(op,v)=>{const L=selItems();if(!L.length)return;
 window.bSet=()=>{const n=state.sel.size;if(!n)return;numDlg('设为… （'+n+' 样）','',1,v=>bOp('set',v))};
 window.addEventListener('hashchange',()=>{if(!location.hash.startsWith('#zone')){state.batch=false;state.sel.clear()}state.ssel.clear()});
 /* ===== GLOBAL LOCK v5：默认只能看；首页左上角的锁主动解锁 ===== */
-const LOCK={"salt": "bd23a1f2b54e603558850d5bc5e3a6a0", "iter": 100000, "hash": "930709ad663098e2323218ead61bc17ffe58758c6e8dc9fbe4855f695f1b7cb5"},LKS='shenchu-unlocked';
+const LOCK={"salt": "7abf58f0799639bd6d07759dbf3868e8", "iter": 100000, "hash": "65ab36e0427ea530fe0df50e538bfe38c00eb8359a076b13909543640af00fdf"},LKS='shenchu-unlocked';
 function unlocked(){return sessionStorage.getItem(LKS)===LOCK.hash||(localStorage.getItem(LKS+'-dev')===LOCK.hash&&!sessionStorage.getItem(LKS+'-off'))}
 const LOCKPX={c:["...kkkkkk...","..kwwwwwwk..","..kw.kk.wk..","..kw.kk.wk..","..kw....wk..","kkkkkkkkkkkk","kyyyyyyyyyyk","kyyyykkyyyyk","kyyyykkyyyyk","kyyyyykyyyyk","kyyyyyyyyyyk","kkkkkkkkkkkk"],
 o:["...kkkkkk...","..kwwwwwwk..","..kw.kk.wk..","..kw.kk.wk..","..kw.......","..kw........","kkkkkkkkkkkk","kgggggggggk.","kggggkkgggk.","kgggggkgggk.","kgggggggggk.","kkkkkkkkkkk."]};
