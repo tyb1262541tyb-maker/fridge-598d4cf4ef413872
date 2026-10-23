@@ -615,6 +615,12 @@ button,.bdg,.chips button,.eseg button,.cmode button,.gq button,.epre button,.eq
 header h1{letter-spacing:.5px!important;line-height:1.25}
 header:has(.d) h1{font-size:19px;white-space:nowrap!important;letter-spacing:0!important;overflow:hidden!important;text-overflow:ellipsis!important}
 .score .big b,.gbig,.cd,.enum input{font-variant-numeric:lining-nums tabular-nums;letter-spacing:0!important}
+
+/* v6x 2D 深蹲动画（手绘定稿图做的 2D 动画，奶油底 #faf2de 与画面一致） */
+img.l3d.l2d{object-fit:contain;background:#faf2de}
+.mfbox.m2d{background:#faf2de!important}
+.mfbox.big.m2d{aspect-ratio:400/455;width:min(100%,380px,calc(56vh*400/455));max-width:none;margin:8px auto}
+.mfbox.big.m2d img.l3d.l2d{width:100%;height:100%;aspect-ratio:auto;border-radius:16px}
 </style></head><body><div id="app"></div>
 <script>
 // v6e 备份防爆：每次升版本都会存一份 ~240KB 备份，满 5MB 后 setItem 抛错导致白屏。现在只留最近 3 份，写失败也不拦启动
@@ -1000,7 +1006,7 @@ window.bOp=(op,v)=>{const L=selItems();if(!L.length)return;
 window.bSet=()=>{const n=state.sel.size;if(!n)return;numDlg('设为… （'+n+' 样）','',1,v=>bOp('set',v))};
 window.addEventListener('hashchange',()=>{if(!location.hash.startsWith('#zone')){state.batch=false;state.sel.clear()}state.ssel.clear()});
 /* ===== GLOBAL LOCK v5：默认只能看；首页左上角的锁主动解锁 ===== */
-const LOCK={"salt": "7abf58f0799639bd6d07759dbf3868e8", "iter": 100000, "hash": "65ab36e0427ea530fe0df50e538bfe38c00eb8359a076b13909543640af00fdf"},LKS='shenchu-unlocked';
+const LOCK={"salt": "4d2063fed14289fd0a589325bbe0db66", "iter": 100000, "hash": "49be32dadcfc390a677af2fdd9e26da8a94d7813b5fa917e28ff4c59bfe346e1"},LKS='shenchu-unlocked';
 function unlocked(){return sessionStorage.getItem(LKS)===LOCK.hash||(localStorage.getItem(LKS+'-dev')===LOCK.hash&&!sessionStorage.getItem(LKS+'-off'))}
 const LOCKPX={c:["...kkkkkk...","..kwwwwwwk..","..kw.kk.wk..","..kw.kk.wk..","..kw....wk..","kkkkkkkkkkkk","kyyyyyyyyyyk","kyyyykkyyyyk","kyyyykkyyyyk","kyyyyykyyyyk","kyyyyyyyyyyk","kkkkkkkkkkkk"],
 o:["...kkkkkk...","..kwwwwwwk..","..kw.kk.wk..","..kw.kk.wk..","..kw.......","..kw........","kkkkkkkkkkkk","kgggggggggk.","kggggkkgggk.","kgggggkgggk.","kgggggggggk.","kkkkkkkkkkk."]};
@@ -1317,7 +1323,7 @@ function vTrain(){const T=EMBED.fit.templates,nt=nextTpl();
  <div class="rh">📚 动作库（${uniqSteps().length} 个）</div><div class="mvgrid">${uniqSteps().map(s=>`<button type="button" class="mvc" onclick="mvOpen('${s.exerciseId}')"><span class="mfbox"><canvas class="mf" data-mv="${s.exerciseId}" width="110" height="75"></canvas></span><span class="mvn">${esc(s.name)}</span><span class="bdgs mvb"><span class="bdg"><b>${s.sets} 组</b></span><span class="bdg kb"><b>${s.seconds?s.seconds+' 秒':esc(String(s.reps||'')).slice(0,8)+(s.reps?' 次':'')}</b></span></span></button>`).join('')}</div>
  <div class="note">动作示意来自 FitFlow v2，换成 8 位像素小人。颈椎不适时动作幅度放小。</div></main>`+navbar('train')}
 function uniqSteps(){const seen={},o=[];EMBED.fit.templates.forEach(t=>t.steps.forEach(s=>{if(!seen[s.exerciseId]&&MOVES[s.exerciseId]){seen[s.exerciseId]=1;o.push(s)}}));return o}
-window.mvOpen=id=>{const s=uniqSteps().find(x=>x.exerciseId===id);const ov=document.createElement('div');ov.className='sheetov';ov.innerHTML=`<div class="sheet"><h3 class="mvn">${esc(s.name)}</h3><span class="mfbox big"><canvas class="mf big" data-mv="${id}" width="110" height="75"></canvas></span><div class="say" data-say="${id}"></div><div class="sl">${esc(s.cue||'')}</div>${s.neckNote?`<div class="rpre">🦒 ${esc(s.neckNote)}</div>`:''}<ol class="tips">${(s.tips||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ol><button class="primary" onclick="this.closest('.sheetov').remove()">好</button></div>`;ov.onclick=e=>{if(e.target===ov)ov.remove()};document.body.appendChild(ov);mfScan()};
+window.mvOpen=id=>{const s=uniqSteps().find(x=>x.exerciseId===id);const ov=document.createElement('div');ov.className='sheetov';ov.innerHTML=`<div class="sheet"><h3 class="mvn">${esc(s.name)}</h3><span class="mfbox big"><canvas class="mf big" data-mv="${id}" width="110" height="75"></canvas></span><div class="say" data-say="${id}"></div><div class="sl">${esc(s.cue||'')}</div>${s.neckNote?`<div class="rpre">🦒 ${esc(s.neckNote)}</div>`:''}<ol class="tips">${(s.tips||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ol><button class="primary" onclick="this.closest('.sheetov').remove()">好</button></div>`;ov.onclick=e=>{if(e.target===ov)ov.remove()};document.body.appendChild(ov);mfScan();if(L2D[id])l3dScan()};
 function runS(){try{return JSON.parse(sessionStorage.getItem('run')||'null')}catch(e){return null}}
 function vRun(id){const t=EMBED.fit.templates.find(x=>x.id===id);if(!t)return vTrain();let S=runS();if(!S||S.tpl!==id){S={tpl:id,i:0,set:1,phase:'work',end:0};sessionStorage.setItem('run',JSON.stringify(S))}
  if(S.i>=t.steps.length)return head('🏋️ 练完了',1)+`<main><div class="score"><div class="big"><b>🎉</b><span>${esc(t.name)} 完成</span></div></div>${(FIT.wk[dk()]||[]).some(w=>w.tpl===id)?'<div class="rpre" style="background:#b8f0b8">✅ 已记到今天</div>':`<button class="primary hard" onclick="wkDone('${id}')">✅ 记到今天</button>`}<button class="primary" onclick="sessionStorage.removeItem('run');go('today')">回今天</button></main>`+navbar('train');
@@ -1568,10 +1574,11 @@ function mbar(t,v,max,unit,col){const o=Math.round((v-max)*10)/10,r=v/max;return
 
 /* v6f 3D 动作库：预渲染 webp，进视口才播，离屏/后台换回首帧；加载失败回退旧小人 */
 var L3D_IDS='rec-march,bodyweight-squat,rec-floor-press,floor-pullover,supported-split-squat,farmer-carry,dead-bug,db-curl,hammer-curl,foam-roll-upper-back,side-step,db-glute-bridge,rec-dumbbell-rdl,incline-push-up,prone-w-raise,half-kneel-press,side-plank-knee,chin-tuck,rec-wall-angels,rec-arm-raises,hip-flexor-stretch'.split(','),L3D_V='6f1',l3dIO=null;
-function l3dSet(im,anim){var u='lib3d/'+im.dataset.l3d+(anim?'.webp':'-p.webp')+'?v='+L3D_V;if(im.getAttribute('src')!==u)im.setAttribute('src',u)}
+var L2D={'bodyweight-squat':'assets/squat'},L2D_V='6x1';
+function l3dSet(im,anim){var k=im.dataset.l3d,u=(L2D[k]?L2D[k]+(anim?'.webp':'-p.webp')+'?v='+L2D_V:'lib3d/'+k+(anim?'.webp':'-p.webp')+'?v='+L3D_V);if(im.getAttribute('src')!==u)im.setAttribute('src',u)}
 function l3dScan(){try{if(!l3dIO&&'IntersectionObserver' in window)l3dIO=new IntersectionObserver(function(es){es.forEach(function(e){l3dSet(e.target,e.isIntersecting&&!document.hidden)})},{rootMargin:'60px'});
  document.querySelectorAll('canvas.mf[data-mv]').forEach(function(cv){if(cv.dataset.l3d||L3D_IDS.indexOf(cv.dataset.mv)<0||cv.closest('nav'))return;cv.dataset.l3d='1';
-  var im=document.createElement('img');im.className='l3d'+(cv.classList.contains('tpl')?' tpl':'');im.alt='';im.decoding='async';im.dataset.l3d=cv.dataset.mv;
+  var im=document.createElement('img');im.className='l3d'+(cv.classList.contains('tpl')?' tpl':'')+(L2D[cv.dataset.mv]?' l2d':'');im.loading='lazy';if(L2D[cv.dataset.mv]&&cv.parentNode.classList&&cv.parentNode.classList.contains('mfbox'))cv.parentNode.classList.add('m2d');im.alt='';im.decoding='async';im.dataset.l3d=cv.dataset.mv;
   im.onerror=function(){if(l3dIO)l3dIO.unobserve(im);im.remove();cv.classList.remove('l3dh')};
   cv.classList.add('l3dh');cv.parentNode.insertBefore(im,cv);l3dSet(im,false);if(l3dIO)l3dIO.observe(im);else l3dSet(im,true)})}catch(e){}}
 document.addEventListener('visibilitychange',function(){var a=document.querySelectorAll('img.l3d');for(var i=0;i<a.length;i++){if(document.hidden)l3dSet(a[i],false);else if(l3dIO){l3dIO.unobserve(a[i]);l3dIO.observe(a[i])}}});
