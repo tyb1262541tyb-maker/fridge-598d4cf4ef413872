@@ -79,6 +79,8 @@ svg{display:block}
 .input-row,
 .preview-line,
 .stock-edit-bar,
+.stock-add-bar,
+.spice-toolbar,
 .app-header,
 .formula-head,
 .sheet-head,
@@ -96,7 +98,10 @@ svg{display:block}
 .recipe-tags,
 .ing-chips,
 .preview-actions,
-.header-actions {
+.header-actions,
+.stock-actions,
+.stock-edit-actions,
+.stock-add-actions {
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -120,6 +125,9 @@ svg{display:block}
 .seg-btn,
 .step-btn,
 .status-pill,
+.stock-act-btn,
+.stock-add-btn,
+.spice-del-x,
 .combo-chip,
 .tag,
 .ing-chip,
@@ -139,6 +147,7 @@ svg{display:block}
 .recipe-name,
 .preview-name,
 .spice-name,
+.spice-toolbar-hint,
 .app-title {
   flex: 1 1 auto;
   min-width: 0;
@@ -1198,16 +1207,67 @@ svg{display:block}
   background: linear-gradient(var(--bg) 85%, rgba(242, 244, 247, 0));
 }
 
-.search-well,
 .stock-search-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+.search-well {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
 .search-icon {
   font-size: 15px;
   opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.stock-add-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--r-well);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.stock-add-panel {
+  margin-top: 10px;
+}
+
+.stock-add-card {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stock-new-well {
+  padding: 8px 12px;
+}
+
+.stock-new-input {
+  width: 100%;
+  font-size: 15px;
+}
+
+.stock-add-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stock-add-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -1264,8 +1324,8 @@ svg{display:block}
 }
 
 .stock-row {
-  min-height: 50px;
-  padding: 12px 0;
+  min-height: 52px;
+  padding: 10px 0;
   border-bottom: 1px solid var(--line);
 }
 
@@ -1312,6 +1372,13 @@ svg{display:block}
   flex-shrink: 0;
 }
 
+.stock-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -1340,6 +1407,43 @@ svg{display:block}
 .status-pill.out {
   background: var(--well);
   color: var(--muted);
+}
+
+.stock-act-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--well);
+  color: var(--text);
+  border: 1px solid var(--line);
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: transform 0.12s, background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.stock-act-btn:active {
+  transform: scale(0.95);
+}
+
+.stock-act-btn.is-active {
+  background: var(--blue-soft);
+  color: var(--blue);
+  border-color: rgba(0, 122, 255, 0.3);
+}
+
+.stock-act-btn.is-del {
+  background: var(--red-soft);
+  color: #B91C1C;
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.stock-act-btn.is-del:active {
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .stock-divider,
@@ -1372,6 +1476,31 @@ svg{display:block}
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.stock-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.spice-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 4px 12px;
+}
+
+.spice-toolbar-hint {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .spice-group {
@@ -1408,7 +1537,9 @@ svg{display:block}
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid var(--line);
-  transition: transform 0.12s, opacity 0.15s;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.12s, opacity 0.15s, border-color 0.15s, background-color 0.15s;
 }
 
 .spice-cell:active {
@@ -1418,6 +1549,28 @@ svg{display:block}
 .spice-cell.is-out,
 .spice-cell.out {
   opacity: 0.45;
+}
+
+.spice-cell.is-manage {
+  cursor: pointer;
+}
+
+.spice-cell.is-manage.is-active {
+  border-color: rgba(0, 122, 255, 0.4);
+  background: rgba(0, 122, 255, 0.08);
+}
+
+.spice-name-btn {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
 }
 
 .spice-name {
@@ -1444,6 +1597,35 @@ svg{display:block}
 .spice-dot.is-out,
 .spice-dot.out {
   background: var(--faint);
+}
+
+.spice-del-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--red-soft);
+  color: #B91C1C;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: transform 0.12s, background-color 0.12s;
+}
+
+.spice-del-x:active {
+  transform: scale(0.9);
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.spice-edit {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  border-bottom: none;
 }
 
 /* ==========================================================================
@@ -1975,10 +2157,14 @@ svg{display:block}
     <!-- Tab 2 库存 -->
     <section id="view-stock" class="view">
       <div class="stock-top">
-        <div class="glass-well search-well">
-          <span class="search-icon">🔍</span>
-          <input id="stock-search" class="field" type="search" autocomplete="off" placeholder="搜索或新增…">
+        <div class="stock-search-row">
+          <div class="glass-well search-well">
+            <span class="search-icon">🔍</span>
+            <input id="stock-search" class="field" type="search" autocomplete="off" placeholder="搜索或新增…">
+          </div>
+          <button id="btn-stock-add" class="btn btn-primary stock-add-btn" data-act="s-add-open">+ 新增</button>
         </div>
+        <div id="stock-add-panel" class="stock-add-panel" hidden></div>
         <div id="stock-filters" class="filter-row"></div>
       </div>
       <div id="stock-list"></div>
@@ -2073,6 +2259,8 @@ try{RDONE=jobj('shenchu-rdone')}catch(e){RDONE={}}
   if(s)bkSave(KEY+'-backup-'+(s.version||'old'),raw);
   DB=JSON.parse(JSON.stringify(EMBED));
   if(s){const ids=new Set((EMBED.items||[]).map(i=>i.id));DB.items=DB.items.concat(s.items.filter(i=>!ids.has(i.id)&&typeof i.id==='string'&&i.id[0]==='u'));for(const k in s)if(!(k in EMBED))DB[k]=s[k]}}
+ let delMap={};try{const st=JSON.parse(localStorage.getItem('shenchu-sync-st')||'{}');if(st&&st.recs&&typeof st.recs==='object')delMap=st.recs}catch(e){}
+ if(Array.isArray(DB.items))DB.items=DB.items.filter(i=>i&&!(delMap['i:'+i.id]&&delMap['i:'+i.id].del));
  DB.rules=EMBED.rules;if(!hold)lsSet(KEY,JSON.stringify(DB))})();
 function save(){return lsSet(KEY,JSON.stringify(DB))}
 function bump(){DB.edited=new Date().toISOString();return save()}
@@ -2081,7 +2269,7 @@ const FIT0={target:1800,prot:140,fat:55,carb:185,fiber:25,tgtV:2,wkTarget:4,log:
 let FIT;{const raw=localStorage.getItem(FKEY);let p={},bad=false;
  if(raw){try{p=JSON.parse(raw)}catch(e){bad=true}if(!bad&&(!p||typeof p!=='object'||Array.isArray(p)))bad=true}
  if(bad){p={};keepRaw(FKEY+'-corrupt-',raw,2)}
- FIT=Object.assign({},FIT0,p);
+ FIT=Object.assign({},FIT0,{tgtV:0},p);
  if(!FIT.log||typeof FIT.log!=='object'||Array.isArray(FIT.log))FIT.log={};
  if(!Array.isArray(FIT.combos))FIT.combos=[];
  if(!FIT.wk||typeof FIT.wk!=='object'||Array.isArray(FIT.wk))FIT.wk={};
@@ -2092,7 +2280,7 @@ let FIT;{const raw=localStorage.getItem(FKEY);let p={},bad=false;
 }
 function fsave(){return lsSet(FKEY,JSON.stringify(FIT))}
 
-const BFC={name:'固定早餐',fixed:1,cid:'c1o284dq2',items:[
+const BFC={name:'固定早餐',fixed:1,cid:'c_fixed_bf',items:[
  {name:'鸡蛋 2 个（100g）',kcal:157,p:12.7,f:11.5,c:0.7,fb:0,src:'bf:egg'},
  {name:'无乳糖牛奶 3.2% 300ml',kcal:180,p:9.3,f:9.6,c:14.1,fb:0,src:'bf:milk'},
  {name:'Быстров 草莓燕麦 1 包 40g',kcal:149,p:4,f:2.4,c:26,fb:2.8,src:'bf:oat'}
@@ -2288,6 +2476,7 @@ const UI = {
   meal: curMeal(), preview: [], editEntry: null, flashIds: [],
   trendOpen: false, trendDays: 14,
   stockFilter: 'all', stockQuery: '', editItem: null,
+  addOpen: false, addCat: 'veg', spiceManage: false,
   cookFilter: 'can', pot: '全部', openRecipe: null, formulaOpen: false
 };
 
@@ -2477,9 +2666,9 @@ function setQty(id, q){
   stockChanged();
   return prev;
 }
-function addItem(name){
+function addItem(name, catParam){
   const nm = String(name || '').trim(); if (!nm) return null;
-  const cat = CAT_SET[UI.stockFilter] ? UI.stockFilter : 'veg';
+  const cat = (catParam && CAT_SET[catParam]) ? catParam : (CAT_SET[UI.stockFilter] ? UI.stockFilter : 'veg');
   const src = foodMatch(nm, 100);
   const it = Object.assign({
     id: newId('u'), name: nm, orig: '', zone: '常温', style: '', taste: '', sprite: '', c1: '', c2: '',
@@ -2489,6 +2678,29 @@ function addItem(name){
   if (src && src.nut) it.nut = Object.assign({}, src.nut);
   DB.items.push(it); stockChanged();
   return it;
+}
+function submitNewStock(){
+  const inp = document.getElementById('stock-new-name');
+  const name = inp ? inp.value.trim() : '';
+  if (!name) return;
+  const it = addItem(name, UI.addCat || 'veg');
+  UI.addOpen = false;
+  if (inp) inp.value = '';
+  renderAll();
+  if (it) {
+    toast(`已加 ${uiName(it.name)}`, '撤销', () => {
+      const idx = DB.items.findIndex(x => x.id === it.id);
+      if (idx >= 0) {
+        if (typeof deleteItem === 'function') deleteItem(it.id);
+        else {
+          DB.items.splice(idx, 1);
+          if (typeof stockChanged === 'function') stockChanged();
+          else bump();
+        }
+        renderAll();
+      }
+    });
+  }
 }
 function setItemCat(id, cat){
   const it = itemById(id); if (!it || !CAT_SET[cat] || stockCat(it) === cat) return;
@@ -2502,6 +2714,7 @@ function renameItem(id, name){
 function deleteItem(id){
   const idx = DB.items.findIndex(i => i.id === id); if (idx < 0) return null;
   const [it] = DB.items.splice(idx, 1); stockChanged();
+  if(typeof SY!=='undefined'&&SY.st&&SY.st.recs){SY.st.recs['i:'+id]={h:'del',u:Date.now(),del:1};lsTry(STKEY,JSON.stringify(SY.st));}
   return {it, idx};
 }
 
@@ -2977,6 +3190,45 @@ function renderStock() {
     searchInput.value = UI.stockQuery || '';
   }
 
+  // 内联新增面板
+  const addPanelEl = document.getElementById('stock-add-panel');
+  if (addPanelEl) {
+    if (!UI.addOpen) {
+      addPanelEl.hidden = true;
+      addPanelEl.innerHTML = '';
+    } else {
+      addPanelEl.hidden = false;
+      const curCat = UI.addCat || 'veg';
+      const isInputActive = document.activeElement && document.activeElement.id === 'stock-new-name';
+      if (!isInputActive || !document.getElementById('stock-new-name')) {
+        const curInput = document.getElementById('stock-new-name');
+        const curVal = curInput ? curInput.value : '';
+        addPanelEl.innerHTML =
+          `<div class="glass-card stock-add-card">` +
+            `<div class="glass-well stock-new-well">` +
+              `<input id="stock-new-name" class="field stock-new-input" autocomplete="off" placeholder="输入新食材或调料名称…" value="${esc(curVal)}">` +
+            `</div>` +
+            `<div class="stock-add-bar">` +
+              `<div class="seg seg-sm">` +
+                `<button class="seg-btn ${curCat === 'meat' ? 'is-active' : ''}" data-act="s-add-cat" data-v="meat">肉蛋奶</button>` +
+                `<button class="seg-btn ${curCat === 'veg' ? 'is-active' : ''}" data-act="s-add-cat" data-v="veg">菜果主食</button>` +
+                `<button class="seg-btn ${curCat === 'spice' ? 'is-active' : ''}" data-act="s-add-cat" data-v="spice">调料</button>` +
+              `</div>` +
+              `<div class="stock-add-actions">` +
+                `<button class="btn btn-ghost btn-sm" data-act="s-add-cancel">取消</button>` +
+                `<button class="btn btn-primary btn-sm" data-act="s-add-submit">添加</button>` +
+              `</div>` +
+            `</div>` +
+          `</div>`;
+      } else {
+        const segBtns = addPanelEl.querySelectorAll('.seg-btn[data-act="s-add-cat"]');
+        segBtns.forEach(btn => {
+          btn.classList.toggle('is-active', btn.dataset.v === curCat);
+        });
+      }
+    }
+  }
+
   const items = (DB && Array.isArray(DB.items)) ? DB.items : [];
   const counts = {
     all: items.length,
@@ -3020,6 +3272,17 @@ function renderStock() {
       const cellsHtml = gList.map(it => {
         const isIn = (Number(it.qty) || 0) > 0;
         const shortName = typeof spiceShort === 'function' ? spiceShort(it.name) : uiName(it.name);
+        const isEditing = UI.editItem === it.id;
+        if (UI.spiceManage) {
+          return (
+            `<div class="spice-cell is-manage ${isIn ? '' : 'is-out'} ${isEditing ? 'is-active' : ''}">` +
+              `<button class="spice-name-btn" data-act="s-edit" data-id="${esc(it.id)}">` +
+                `<span class="spice-name">${esc(shortName)}</span>` +
+              `</button>` +
+              `<span class="spice-del-x" data-act="s-del" data-id="${esc(it.id)}" role="button" aria-label="删除">×</span>` +
+            `</div>`
+          );
+        }
         return (
           `<button class="spice-cell ${isIn ? '' : 'is-out'}" data-act="s-toggle" data-id="${esc(it.id)}">` +
             `<span class="spice-name">${esc(shortName)}</span>` +
@@ -3027,14 +3290,47 @@ function renderStock() {
           `</button>`
         );
       }).join('');
+
+      let editHtml = '';
+      if (UI.spiceManage && UI.editItem) {
+        const editingItem = gList.find(it => it.id === UI.editItem);
+        if (editingItem) {
+          const dName = uiName(editingItem.name);
+          const cat = stockCat(editingItem);
+          editHtml =
+            `<div class="stock-edit spice-edit">` +
+              `<div class="glass-well"><input class="field stock-edit-input" data-id="${esc(editingItem.id)}" value="${esc(dName)}"></div>` +
+              `<div class="stock-edit-bar">` +
+                `<div class="seg seg-sm">` +
+                  `<button class="seg-btn ${cat === 'meat' ? 'is-active' : ''}" data-act="s-cat" data-id="${esc(editingItem.id)}" data-v="meat">肉蛋奶</button>` +
+                  `<button class="seg-btn ${cat === 'veg' ? 'is-active' : ''}" data-act="s-cat" data-id="${esc(editingItem.id)}" data-v="veg">菜果主食</button>` +
+                  `<button class="seg-btn ${cat === 'spice' ? 'is-active' : ''}" data-act="s-cat" data-id="${esc(editingItem.id)}" data-v="spice">调料</button>` +
+                `</div>` +
+                `<div class="stock-edit-actions">` +
+                  `<button class="btn btn-primary btn-sm" data-act="s-edit-save" data-id="${esc(editingItem.id)}">完成</button>` +
+                  `<button class="btn btn-danger btn-sm" data-act="s-del" data-id="${esc(editingItem.id)}">删</button>` +
+                `</div>` +
+              `</div>` +
+            `</div>`;
+        }
+      }
+
       return (
         `<div class="glass-card spice-group">` +
           `<div class="spice-group-title">${esc(gTitle)}</div>` +
           `<div class="spice-grid">${cellsHtml}</div>` +
+          editHtml +
         `</div>`
       );
     }).join('');
-    stockListEl.innerHTML = groupsHtml || `<div class="glass-card stock-list-card"><div class="empty">暂无调料</div></div>`;
+
+    const toolbarHtml =
+      `<div class="spice-toolbar">` +
+        `<span class="spice-toolbar-hint">点卡片切有/缺 · 点管理可改名或删除</span>` +
+        `<button class="pill pill-sm ${UI.spiceManage ? 'is-active' : ''}" data-act="spice-manage">${UI.spiceManage ? '完成' : '管理 / 删除'}</button>` +
+      `</div>`;
+
+    stockListEl.innerHTML = toolbarHtml + (groupsHtml || `<div class="glass-card stock-list-card"><div class="empty">暂无调料</div></div>`);
     return;
   }
 
@@ -3058,16 +3354,21 @@ function renderStock() {
     const soonBadge = isSoon(it) ? `<span class="badge-soon">快过期</span>` : '';
     const dName = uiName(it.name);
     const cat = stockCat(it);
+    const isEditing = UI.editItem === it.id;
     const mainRow =
       `<div class="stock-row ${isIn ? '' : 'is-out'}">` +
         `<button class="stock-name" data-act="s-edit" data-id="${esc(it.id)}">` +
           `<span class="stock-name-text">${esc(dName)}</span>` +
           soonBadge +
         `</button>` +
-        `<button class="status-pill ${isIn ? 'is-in' : 'is-out'}" data-act="s-toggle" data-id="${esc(it.id)}">${isIn ? '🟢 有' : '⚪ 缺'}</button>` +
+        `<div class="stock-actions">` +
+          `<button class="status-pill ${isIn ? 'is-in' : 'is-out'}" data-act="s-toggle" data-id="${esc(it.id)}">${isIn ? '🟢 有' : '⚪ 缺'}</button>` +
+          `<button class="stock-act-btn ${isEditing ? 'is-active' : ''}" data-act="s-edit" data-id="${esc(it.id)}">改</button>` +
+          `<button class="stock-act-btn is-del" data-act="s-del" data-id="${esc(it.id)}">删</button>` +
+        `</div>` +
       `</div>`;
 
-    if (UI.editItem !== it.id) return mainRow;
+    if (!isEditing) return mainRow;
 
     const editRow =
       `<div class="stock-edit">` +
@@ -3078,7 +3379,10 @@ function renderStock() {
             `<button class="seg-btn ${cat === 'veg' ? 'is-active' : ''}" data-act="s-cat" data-id="${esc(it.id)}" data-v="veg">菜果主食</button>` +
             `<button class="seg-btn ${cat === 'spice' ? 'is-active' : ''}" data-act="s-cat" data-id="${esc(it.id)}" data-v="spice">调料</button>` +
           `</div>` +
-          `<button class="btn btn-danger btn-sm" data-act="s-del" data-id="${esc(it.id)}">删</button>` +
+          `<div class="stock-edit-actions">` +
+            `<button class="btn btn-primary btn-sm" data-act="s-edit-save" data-id="${esc(it.id)}">完成</button>` +
+            `<button class="btn btn-danger btn-sm" data-act="s-del" data-id="${esc(it.id)}">删</button>` +
+          `</div>` +
         `</div>` +
       `</div>`;
 
@@ -3765,6 +4069,14 @@ function bindEvents() {
       case 'sf':
         UI.stockFilter = el.dataset.v;
         UI.editItem = null;
+        if (UI.stockFilter !== 'spice' && UI.stockFilter !== '调料') {
+          UI.spiceManage = false;
+        }
+        renderStock();
+        break;
+      case 'spice-manage':
+        UI.spiceManage = !UI.spiceManage;
+        if (!UI.spiceManage) UI.editItem = null;
         renderStock();
         break;
       case 's-toggle':
@@ -3774,6 +4086,26 @@ function bindEvents() {
         UI.editItem = UI.editItem === el.dataset.id ? null : el.dataset.id;
         renderStock();
         break;
+      case 's-edit-save': {
+        const id = el.dataset.id;
+        const inp = document.querySelector(`.stock-edit-input[data-id="${id}"]`);
+        if (inp && id) {
+          const val = inp.value.trim();
+          if (val && typeof renameItem === 'function') {
+            renameItem(id, val);
+          } else {
+            const it = DB.items.find(x => x.id === id);
+            if (it && val && val !== uiName(it.name)) {
+              it.name = val;
+              if (typeof stockChanged === 'function') stockChanged();
+              else bump();
+            }
+          }
+        }
+        UI.editItem = null;
+        renderAll();
+        break;
+      }
       case 's-cat':
         if (typeof setItemCat === 'function') {
           setItemCat(el.dataset.id, el.dataset.v);
@@ -3794,9 +4126,10 @@ function bindEvents() {
           }
           if (UI.editItem === id) UI.editItem = null;
           renderAll();
-          toast('已删', '撤销', () => {
+          toast(`已删 ${uiName(snap.name)}`, '撤销', () => {
             if (!DB.items.some(x => x.id === snap.id)) {
               DB.items.splice(Math.min(idx, DB.items.length), 0, snap);
+              if(typeof SY!=='undefined'&&SY.st&&SY.st.recs){SY.st.recs['i:'+snap.id]={h:syHash(snap),u:Date.now()};lsTry(STKEY,JSON.stringify(SY.st));}
               if (typeof stockChanged === 'function') stockChanged();
               else bump();
               renderAll();
@@ -3805,13 +4138,73 @@ function bindEvents() {
         }
         break;
       }
+      case 's-add-open': {
+        const q = (UI.stockQuery || '').trim();
+        if (q) {
+          const it = (typeof addItem === 'function') ? addItem(q) : null;
+          UI.stockQuery = '';
+          const searchEl = document.getElementById('stock-search');
+          if (searchEl) searchEl.value = '';
+          renderAll();
+          if (it) {
+            toast(`已加 ${uiName(it.name)}`, '撤销', () => {
+              const curIdx = DB.items.findIndex(x => x.id === it.id);
+              if (curIdx >= 0) {
+                if (typeof deleteItem === 'function') deleteItem(it.id);
+                else {
+                  DB.items.splice(curIdx, 1);
+                  if (typeof stockChanged === 'function') stockChanged();
+                  else bump();
+                }
+                renderAll();
+              }
+            });
+          }
+        } else {
+          UI.addOpen = !UI.addOpen;
+          renderStock();
+          if (UI.addOpen) {
+            setTimeout(() => {
+              const inp = document.getElementById('stock-new-name');
+              if (inp) inp.focus();
+            }, 50);
+          }
+        }
+        break;
+      }
+      case 's-add-cat':
+        UI.addCat = el.dataset.v || 'veg';
+        renderStock();
+        break;
+      case 's-add-cancel':
+        UI.addOpen = false;
+        renderStock();
+        break;
+      case 's-add-submit':
+        submitNewStock();
+        break;
       case 's-add': {
         const q = (UI.stockQuery || '').trim();
         if (q && typeof addItem === 'function') {
-          addItem(q);
+          const it = addItem(q);
+          UI.stockQuery = '';
           const searchEl = document.getElementById('stock-search');
-          if (searchEl) searchEl.value = UI.stockQuery || '';
+          if (searchEl) searchEl.value = '';
           renderAll();
+          if (it) {
+            toast(`已加 ${uiName(it.name)}`, '撤销', () => {
+              const curIdx = DB.items.findIndex(x => x.id === it.id);
+              if (curIdx >= 0) {
+                if (typeof deleteItem === 'function') deleteItem(it.id);
+                else {
+                  DB.items.splice(curIdx, 1);
+                  if (typeof stockChanged === 'function') stockChanged();
+                  else bump();
+                }
+                renderAll();
+              }
+            });
+          }
         }
         break;
       }
@@ -3856,6 +4249,16 @@ function bindEvents() {
     });
   }
 
+  const stockAddPanel = document.getElementById('stock-add-panel');
+  if (stockAddPanel) {
+    stockAddPanel.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.target && e.target.id === 'stock-new-name') {
+        e.preventDefault();
+        submitNewStock();
+      }
+    });
+  }
+
   const stockSearch = document.getElementById('stock-search');
   if (stockSearch) {
     stockSearch.addEventListener('input', (e) => {
@@ -3867,9 +4270,24 @@ function bindEvents() {
         const q = (UI.stockQuery || '').trim();
         if (q && !DB.items.some(i => uiName(i.name) === q)) {
           e.preventDefault();
-          if (typeof addItem === 'function') addItem(q);
-          stockSearch.value = UI.stockQuery || '';
+          const it = (typeof addItem === 'function') ? addItem(q) : null;
+          UI.stockQuery = '';
+          stockSearch.value = '';
           renderAll();
+          if (it) {
+            toast(`已加 ${uiName(it.name)}`, '撤销', () => {
+              const curIdx = DB.items.findIndex(x => x.id === it.id);
+              if (curIdx >= 0) {
+                if (typeof deleteItem === 'function') deleteItem(it.id);
+                else {
+                  DB.items.splice(curIdx, 1);
+                  if (typeof stockChanged === 'function') stockChanged();
+                  else bump();
+                }
+                renderAll();
+              }
+            });
+          }
         }
       }
     });
@@ -3911,7 +4329,15 @@ function bindEvents() {
     stockListEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && e.target && e.target.classList && e.target.classList.contains('stock-edit-input')) {
         e.preventDefault();
-        e.target.blur();
+        const inp = e.target;
+        const id = inp.dataset.id;
+        const val = inp.value.trim();
+        if (id && val && typeof renameItem === 'function') {
+          renameItem(id, val);
+        }
+        UI.editItem = null;
+        inp.blur();
+        renderAll();
       }
     });
   }
@@ -3936,6 +4362,7 @@ function bindEvents() {
 }
 
 function boot() {
+  if (typeof syStamp === 'function') syStamp();
   if (!UI.meal && typeof curMeal === 'function') UI.meal = curMeal();
   bindEvents();
   if (typeof route === 'function') route();
