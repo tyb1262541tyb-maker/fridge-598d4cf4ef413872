@@ -9,7 +9,7 @@
    1.1 全局重置（原样内置，一字不改）
    ========================================================================== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;scroll-padding-block:100px}
 body{
   background:#F2F4F7;color:#1D1D1F;
   font:15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Hiragino Sans GB","Helvetica Neue",Arial,sans-serif;
@@ -35,6 +35,7 @@ svg{display:block}
    1.2 设计变量（:root）
    ========================================================================== */
 :root{
+  --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
   --bg:#F2F4F7;
   --card:rgba(255,255,255,.78);
   --card-border:rgba(255,255,255,.88);
@@ -2104,6 +2105,53 @@ svg{display:block}
   font-weight: 600;
   background: var(--blue-soft);
 }
+
+/* 自定义食物与营养素：窄屏保持两列，数字和单位分开 */
+.combo-pill-custom { border:1px solid rgba(0,122,255,.26); color:var(--blue); background:rgba(228,241,255,.75); backdrop-filter:var(--blur); }
+.combo-pill-custom.active { background:var(--blue); color:white; border-color:var(--blue); }
+.custom-food-box { margin-top:16px; padding:16px; display:flex; flex-direction:column; gap:14px; border:1px solid rgba(0,122,255,.16); border-radius:18px; background:rgba(240,248,255,.7); backdrop-filter:var(--blur); animation:customReveal .2s ease-out; }
+@keyframes customReveal { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+.custom-row-top { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.custom-name-well { flex:1 1 220px; min-width:0; }
+.custom-name-well input { width:100%; min-width:0; font-size:16px; }
+.custom-grams-well { display:flex; align-items:center; gap:8px; flex:0 1 180px; min-width:150px; }
+.custom-grams-well input { width:100%; min-width:0; font-family:var(--mono); }
+.macro-editor { width:100%; min-width:0; display:flex; flex-direction:column; gap:10px; }
+.macro-caption { font-size:12px; color:var(--muted); line-height:1.6; }
+.macro-grid, .custom-macro-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.macro-cell { min-width:0; padding:12px; border:1px solid rgba(255,255,255,.9); border-radius:14px; background:var(--well); display:flex; flex-direction:column; gap:8px; }
+.macro-label { font-size:12px; color:var(--muted); white-space:nowrap; }
+.macro-number { display:flex; align-items:center; gap:6px; min-width:0; }
+.macro-input { width:100%; min-width:0; font:16px/1.4 var(--mono); font-variant-numeric:tabular-nums; }
+.macro-input::placeholder { font:12px/1.4 -apple-system,BlinkMacSystemFont,sans-serif; }
+.macro-unit { flex-shrink:0; font:12px var(--mono); color:var(--muted); white-space:nowrap; }
+.macro-input::-webkit-inner-spin-button, .custom-grams-well input::-webkit-inner-spin-button { -webkit-appearance:none; }
+.macro-input:focus-visible { outline:2px solid rgba(0,122,255,.3); outline-offset:3px; border-radius:3px; }
+.custom-row-foot { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
+.custom-save-db { border:1px solid var(--line); color:var(--muted); background:var(--well); border-radius:var(--r-pill); min-height:36px; padding:0 12px; font-size:12px; }
+.custom-save-db.active { color:var(--blue); border-color:rgba(0,122,255,.22); background:var(--blue-soft); }
+.custom-actions { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-left:auto; }
+.preview-macro-bar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+.preview-needs { color:var(--blue); font-size:12px; line-height:1.6; }
+.preview-macros { font:12px/1.8 var(--mono); color:var(--muted); overflow-wrap:anywhere; }
+.entry-macros { grid-column:1 / -1; }
+.entry-macro-save { grid-column:1 / -1; justify-self:end; }
+.stock-edit-box { min-width:0; }
+.hero-macros { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:18px; }
+.hero-macro-item { display:flex; flex-direction:column; gap:8px; min-width:0; }
+.hero-macro-label { font-size:12px; color:var(--muted); white-space:nowrap; }
+.preview-line { flex-wrap:wrap; }
+.preview-name { min-width:0; flex:1; overflow-wrap:anywhere; }
+.stock-edit-bar, .stock-add-bar { flex-wrap:wrap; }
+@media (max-width:380px) {
+  .custom-food-box { padding:12px; }
+  .custom-name-well input { font-size:14px; }
+  .macro-cell { padding:10px; }
+  .macro-input::placeholder { font-size:9px; }
+  .custom-actions { width:100%; }
+}
+@media (prefers-reduced-motion:reduce) { .custom-food-box { animation:none; } }
+
 </style>
 </head>
 <body>
@@ -2132,8 +2180,9 @@ svg{display:block}
           </div>
           <button id="btn-parse" class="btn btn-primary" data-act="parse">解析</button>
         </div>
-        <div id="parse-preview" class="preview-box" hidden></div>
         <div id="combo-row" class="combo-row"></div>
+        <div id="custom-food-box" class="custom-food-box" hidden></div>
+        <div id="parse-preview" class="preview-box" hidden></div>
       </div>
 
       <div id="meal-list" class="glass-card meal-list-card"></div>
@@ -2316,7 +2365,7 @@ function yieldOf(f){const g=grainOf(f);if(g)return g;if(f.cooked||f.proc)return 
  for(const[re,y,t]of YIELD)if(re.test(f.name))return y?{y,t}:null;return null}
 
 function foodList(){const L=[];const names=new Set();
- DB.items.filter(i=>i.kind!=='调料').forEach(i=>{names.add(fnorm(i.name));L.push({key:'i:'+i.id,id:i.id,src:'item',name:i.name,ru:i.orig&&i.orig!==i.name?i.orig:'',have:i.qty>0,nut:i.nut,group:i.group})});
+ DB.items.filter(i=>i.kind!=='调料').forEach(i=>{names.add(fnorm(i.name));L.push({key:'i:'+i.id,id:i.id,src:'item',name:i.name,ru:i.orig&&i.orig!==i.name?i.orig:'',have:i.qty>0,nut:i.nut && i.nut.kcal !== undefined ? i.nut : getNut(i.name),group:i.group})});
  (EMBED.foodSeed||[]).forEach(f=>{if((FIT.hideSeed||[]).includes(f.id))return;if(f.alias&&DB.items.some(i=>i.name===f.alias&&i.kind!=='调料'))return;if(names.has(fnorm(f.name)))return;
   L.push({key:'s:'+f.id,id:f.id,src:'seed',name:f.name,ru:'',have:false,nut:f.nut,cooked:f.cooked,proc:f.proc,group:''})});
  (EMBED.catalog||[]).forEach((c,idx)=>{const nm=c.zh||c.name||'';if(!nm||names.has(fnorm(nm)))return;names.add(fnorm(nm));
@@ -2474,6 +2523,7 @@ let CUR_DAY = dayKey(new Date());
 const UI = {
   tab: 'today', todayKey: CUR_DAY,
   meal: curMeal(), preview: [], editEntry: null, flashIds: [],
+  customOpen: false, customSaveDb: true, customDraft: {name:'', g:100}, drafts: {},
   trendOpen: false, trendDays: 14,
   stockFilter: 'all', stockQuery: '', editItem: null,
   addOpen: false, addCat: 'veg', spiceManage: false,
@@ -2515,10 +2565,10 @@ function logEntries(items, meal, day = CUR_DAY){
   const ids = [];
   items.forEach(it => {
     const e = Object.assign({}, it, {id: newId('e'), meal});
-    delete e._per; delete e.day;
+    delete e._per; delete e.day; delete e.needsNutrition; delete e.editMacros;
     L.push(e); ids.push(e.id);
   });
-  fsave(); UI.flashIds = ids;
+  fsave(); UI.flashIds = ids.slice();
   return ids;
 }
 function removeEntries(day, ids){
@@ -2544,6 +2594,108 @@ function frequentFoods(n = 2){
   }
   return Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]).slice(0, n)
     .map(nm => ({label: nm.replace(/[\d.%％]+/g, '').trim() || nm, entry: last[nm]}));
+}
+
+const MACROS = [['kcal','热量','kcal'],['p','蛋白质 P','g'],['f','脂肪 F','g'],['c','碳水 C','g']];
+function getNut(name){
+  const same = i => String(i.name || i.zh || '').trim().toLowerCase() === String(name || '').trim().toLowerCase();
+  const item = DB.items.find(same);
+  if (item && item.nut && item.nut.kcal !== undefined) return item.nut;
+  if (typeof NUT_DB !== 'undefined' && NUT_DB[name]) return NUT_DB[name];
+  const built = [...(EMBED.foodSeed || []), ...(EMBED.catalog || []), ...(EMBED.items || [])].find(i => same(i) && i.nut && i.nut.kcal !== undefined);
+  return built ? built.nut : {kcal:0,p:0,f:0,c:0,fb:0};
+}
+function macroEditor(prefix, values = {}, caption = '', custom = false){
+  const draft = UI.drafts[prefix] || values;
+  return `<div class="macro-editor"><div class="macro-caption">${esc(caption)}</div>` +
+    `<div class="${custom ? 'custom-macro-grid' : 'macro-grid'}">` + MACROS.map(([k,label,unit]) =>
+      `<label class="macro-cell" for="${esc(prefix)}-${k}"><span class="macro-label">${label}</span>` +
+      `<span class="macro-number"><input id="${esc(prefix)}-${k}" class="macro-input" type="number" inputmode="decimal" min="0" step="${k === 'kcal' ? '1' : '0.1'}" data-macro="${k}" data-prefix="${esc(prefix)}" value="${esc(draft[k] ?? '')}" placeholder="${k === 'kcal' ? '必填 或 自动算' : '0'}"><span class="macro-unit">${unit}</span></span></label>`
+    ).join('') + `</div></div>`;
+}
+function readMacros(prefix, optional = false){
+  const raw = {};
+  for (const [k] of MACROS) {
+    const input = document.getElementById(prefix + '-' + k);
+    if (!input) return null;
+    raw[k] = input.value.trim();
+    if (input.validity.badInput || (raw[k] !== '' && (!Number.isFinite(+raw[k]) || +raw[k] < 0))) {
+      toast('营养素请填大于或等于 0 的数字'); input.focus(); return null;
+    }
+  }
+  if (Object.values(raw).every(v => v === '')) {
+    if (optional) return undefined;
+    toast('填写热量，或填写蛋白质、脂肪、碳水自动计算'); return null;
+  }
+  const out = {p:r1(raw.p),f:r1(raw.f),c:r1(raw.c)};
+  out.kcal = raw.kcal === '' ? r0(out.p * 4 + out.f * 9 + out.c * 4) : r0(raw.kcal);
+  return out;
+}
+function autoKcal(prefix, force = false){
+  const input = document.getElementById(prefix + '-kcal');
+  if (!input || (!force && input.value !== '' && !UI.autoCalories?.[prefix])) return;
+  const raw = readMacros(prefix, true);
+  if (!raw) return;
+  input.value = r0(raw.p * 4 + raw.f * 9 + raw.c * 4);
+  UI.autoCalories = UI.autoCalories || {}; UI.autoCalories[prefix] = true;
+  const draft = UI.drafts[prefix] || (UI.drafts[prefix] = {});
+  for (const [k] of MACROS) draft[k] = document.getElementById(prefix + '-' + k)?.value ?? '';
+}
+function renderCustomFood(){
+  const box = document.getElementById('custom-food-box');
+  if (!box) return;
+  box.hidden = !UI.customOpen;
+  if (!UI.customOpen) { box.innerHTML = ''; return; }
+  if (box.contains(document.activeElement) && document.activeElement.tagName === 'INPUT') return;
+  box.innerHTML = `<div class="custom-row-top">` +
+    `<div class="glass-well custom-name-well"><input id="cf-name" aria-label="食物或外卖名" placeholder="食物或外卖名（如：双层吉士堡）" value="${esc(UI.customDraft.name)}"></div>` +
+    `<label class="glass-well custom-grams-well"><input id="cf-g" aria-label="本次份量克数" type="number" min="0.1" step="0.1" inputmode="decimal" placeholder="克数g(默认100)" value="${esc(UI.customDraft.g)}"><span class="macro-unit">g</span></label></div>` +
+    macroEditor('cf', {}, '填写本次份量的总营养；整份记录可用 100g 代表一份。', true) +
+    `<div class="custom-row-foot"><button class="btn btn-ghost btn-sm" data-act="custom-auto">按P/F/C自动算</button><span class="macro-caption">仅在热量留空时自动计算</span></div>` +
+    `<div class="custom-row-foot"><button class="custom-save-db ${UI.customSaveDb ? 'active' : ''}" data-act="custom-save-db-toggle" aria-pressed="${UI.customSaveDb}">${UI.customSaveDb ? '☑ 记本餐并存库' : '仅记本餐'}</button>` +
+    `<span class="macro-caption">存库按每100g折算复用</span><div class="custom-actions"><button class="btn btn-ghost btn-sm" data-act="custom-cancel">取消</button><button class="btn btn-primary" data-act="custom-submit">记入本餐</button></div></div>`;
+}
+function submitCustomFood(){
+  const name = document.getElementById('cf-name').value.trim();
+  const gInput = document.getElementById('cf-g');
+  const grams = gInput.value === '' ? 100 : Number(gInput.value);
+  if (!name) { toast('写个食物或外卖名'); return; }
+  if (gInput.validity.badInput || !Number.isFinite(grams) || grams <= 0) { toast('克数请填大于 0 的数字'); return; }
+  const macros = readMacros('cf'); if (!macros) return;
+  const day = CUR_DAY;
+  let item = null, previous = null, written = null;
+  if (UI.customSaveDb) {
+    item = DB.items.find(i => i.kind !== '调料' && i.name.trim().toLowerCase() === name.toLowerCase());
+    previous = item ? JSON.parse(JSON.stringify(item)) : null;
+    if (!item) item = addItem(name, 'veg');
+    const nut = {kcal:r0(macros.kcal * 100 / grams),p:r1(macros.p * 100 / grams),f:r1(macros.f * 100 / grams),c:r1(macros.c * 100 / grams),fb:0};
+    item.nut = nut; stockChanged(); written = JSON.stringify(item);
+  }
+  const ids = logEntries([{name,grams,...macros,fb:0,src:item ? 'i:' + item.id : 'custom'}], UI.meal, day);
+  UI.customOpen = false; UI.customDraft = {name:'',g:100}; delete UI.drafts.cf; if (UI.autoCalories) delete UI.autoCalories.cf;
+  renderAll();
+  toast(`已记 ${name} · ${macros.kcal} kcal`, '撤销', () => {
+    removeEntries(day, ids);
+    if (item && JSON.stringify(itemById(item.id)) === written) {
+      if (previous) { Object.assign(item, previous); stockChanged(); }
+      else deleteItem(item.id);
+    }
+    renderAll();
+  });
+}
+function syncPreviewMacros(i){
+  const it = UI.preview[i]; if (!it) return false;
+  if (!document.getElementById('pv-' + i + '-kcal')) return !it.needsNutrition;
+  const macros = readMacros('pv-' + i); if (!macros) return false;
+  Object.assign(it, macros, {needsNutrition:false});
+  if (it.grams > 0) it._per = Object.fromEntries(['kcal','p','f','c','fb'].map(k => [k,(Number(it[k]) || 0) / it.grams]));
+  return true;
+}
+function saveEntryMacros(id){
+  const hit = findEntry(id); if (!hit) return;
+  const macros = readMacros('entry-' + id); if (!macros) return;
+  Object.assign(hit.e, macros); delete UI.drafts['entry-' + id];
+  fsave(); renderToday(); toast('营养已保存');
 }
 
 // ===== 解析 =====
@@ -2582,19 +2734,31 @@ function foodToItem(f, g, cooked){
   return mkPreview((cooked && !nm.startsWith('熟') ? '熟' : '') + nm, g, per, f.key, mode);
 }
 function splitInput(t){ return String(t || '').split(/[，,、;；\n]+/).map(s => s.trim()).filter(Boolean); }
-const KCAL_RE = /^(.+?)\s*(\d+(?:\.\d+)?)\s*(kcal|千卡|大卡|卡)$/i;
 const GRAM_RE = /^(熟|生)?\s*(.+?)\s*(\d+(?:\.\d+)?)\s*(g|克|ml|毫升)?$/i;
 function parseLocal(text){
   const items = [], rest = [];
   for (const seg of splitInput(text)) {
-    let m = seg.match(KCAL_RE);
-    if (m) { items.push({name: m[1].trim(), kcal: r0(m[2]), p: 0, f: 0, c: 0, fb: 0, src: 'custom'}); continue; }
-    m = seg.match(GRAM_RE);
-    if (m) {
-      const g = Number(m[3]), f = foodMatch(m[2]);
-      if (f && g > 0) { items.push(foodToItem(f, g, m[1] === '熟')); continue; }
+    // 快捷数字均为本次总量；克数只用于以后按比例增减。
+    const explicit = {};
+    const namePart = seg.replace(/(\d+(?:\.\d+)?)\s*(kcal|千卡|大卡|卡|[pfc])(?=\s|$|\d)/gi, (_, n, unit) => {
+      explicit[/^(kcal|千卡|大卡|卡)$/i.test(unit) ? 'kcal' : unit.toLowerCase()] = +n; return ' ';
+    }).trim();
+    const gram = namePart.match(GRAM_RE);
+    const serving = namePart.match(/^(.+?)\s*(\d+(?:\.\d+)?)\s*份$/);
+    const name = (serving ? serving[1] : gram ? gram[2] : namePart).trim();
+    if (!name) continue;
+    const grams = gram && +gram[3] > 0 ? +gram[3] : 100;
+    const f = foodMatch(name, gram ? 30 : 100);
+    if (Object.keys(explicit).length) {
+      const p = explicit.p || 0, fat = explicit.f || 0, c = explicit.c || 0;
+      const kcal = explicit.kcal ?? r0(p * 4 + fat * 9 + c * 4);
+      items.push(mkPreview(name, grams, {kcal:kcal/grams,p:p/grams,f:fat/grams,c:c/grams,fb:0}, 'custom', 'raw'));
+    } else if (f && !serving) items.push(foodToItem(f, grams, gram && gram[1] === '熟'));
+    else {
+      const it = mkPreview(name, grams, {kcal:0,p:0,f:0,c:0,fb:0}, 'custom', 'raw');
+      it.needsNutrition = true; it.editMacros = true;
+      items.push(it);
     }
-    rest.push(seg);
   }
   return {items, rest};
 }
@@ -2630,9 +2794,12 @@ async function parseDeepSeek(segs){
 async function parseInput(text){
   const loc = parseLocal(text);
   let items = loc.items, rest = loc.rest, failed = false;
-  if (rest.length && localStorage.getItem(DS_KEY)) {
-    try { const ds = await parseDeepSeek(rest); items = items.concat(ds.items); rest = ds.rest; }
-    catch (err) { failed = true; }
+  const unknown = items.filter(it => it.needsNutrition);
+  if (unknown.length && localStorage.getItem(DS_KEY)) {
+    try {
+      const ds = await parseDeepSeek(unknown.map(it => it.name + ' ' + it.grams + 'g'));
+      if (ds.items.length) items = items.filter(it => !it.needsNutrition).concat(ds.items.map(it => ({...it,editMacros:true})));
+    } catch (err) { failed = true; }
   }
   return {items, rest, failed};
 }
@@ -2666,7 +2833,7 @@ function setQty(id, q){
   stockChanged();
   return prev;
 }
-function addItem(name, catParam){
+function addItem(name, catParam, nut){
   const nm = String(name || '').trim(); if (!nm) return null;
   const cat = (catParam && CAT_SET[catParam]) ? catParam : (CAT_SET[UI.stockFilter] ? UI.stockFilter : 'veg');
   const src = foodMatch(nm, 100);
@@ -2675,7 +2842,7 @@ function addItem(name, catParam){
     rule: cat === 'spice' ? 'blend' : 'rootveg', qty: 1, unit: '', opened: false, low: false,
     intake: dayKey(new Date()), tags: []
   }, CAT_SET[cat]);
-  if (src && src.nut) it.nut = Object.assign({}, src.nut);
+  it.nut = Object.assign({}, nut || (src && src.nut) || getNut(nm));
   DB.items.push(it); stockChanged();
   return it;
 }
@@ -2683,8 +2850,10 @@ function submitNewStock(){
   const inp = document.getElementById('stock-new-name');
   const name = inp ? inp.value.trim() : '';
   if (!name) return;
-  const it = addItem(name, UI.addCat || 'veg');
-  UI.addOpen = false;
+  const macros = readMacros('stock-new', true); if (macros === null) return;
+  const it = addItem(name, UI.addCat || 'veg', macros ? {...macros,fb:0} : undefined);
+  delete UI.drafts['stock-new'];
+  UI.addOpen = false; UI.stockNewName = '';
   if (inp) inp.value = '';
   renderAll();
   if (it) {
@@ -2967,7 +3136,9 @@ function renderToday() {
           `<span class="hero-foot">已吃 ${eatP} / ${tgtProt}g</span>` +
         `</div>` +
       `</div>` +
-      `<div class="hero-sub">脂肪 ${fHtml}/${tgtFat}g · 碳水 ${cHtml}/${tgtCarb}g</div>`;
+      `<div class="hero-macros">` + [['f','脂肪',T.f,tgtFat],['c','碳水',T.c,tgtCarb]].map(([k,label,value,target]) =>
+        `<div class="hero-macro-item"><span class="hero-macro-label">${label} ${r1(value)} / ${target}g</span><div class="progress" role="progressbar" aria-label="${label}" aria-valuenow="${r1(value)}" aria-valuemin="0" aria-valuemax="${target}"><div class="progress-fill" data-progress="${k}" style="width:${Math.min(100, Math.max(0, value / target * 100))}%"></div></div></div>`
+      ).join('') + `</div>`;
   }
 
   // 2.3.3 餐次分段 #meal-seg
@@ -2984,6 +3155,8 @@ function renderToday() {
       `<button class="seg-btn ${UI.meal === k ? 'is-active' : ''}" data-act="meal" data-v="${k}">${n}</button>`
     ).join('');
   }
+
+  renderCustomFood();
 
   // 2.3.3 预览条 #parse-preview
   const previewBox = document.getElementById('parse-preview');
@@ -3012,8 +3185,11 @@ function renderToday() {
             `</div>` +
             `<div class="preview-line">` +
               stepperHtml +
-              `<span class="preview-nut">${r0(it.kcal || 0)} kcal · P ${r0(it.p || 0)}g</span>` +
+              `<span class="preview-nut">${r0(it.kcal || 0)} kcal</span>` +
             `</div>` +
+            `<div class="preview-macro-bar"><span class="preview-macros">P ${r1(it.p)}g · F ${r1(it.f)}g · C ${r1(it.c)}g</span><button class="btn btn-ghost btn-sm" data-act="pv-macros" data-i="${i}" aria-expanded="${!!it.editMacros}">改营养</button></div>` +
+            (it.needsNutrition ? `<div class="preview-needs">未找到营养数据，请补充本次总营养；未填克数时按100g代表一份。</div>` : '') +
+            (it.editMacros ? macroEditor('pv-' + i, it.needsNutrition ? {} : it, '本次份量的总营养 · 热量留空时按P/F/C计算') : '') +
           `</div>`
         );
       }).join('');
@@ -3044,6 +3220,7 @@ function renderToday() {
     }).join('');
 
     comboRow.innerHTML =
+      `<button class="combo-chip combo-pill-custom ${UI.customOpen ? 'active' : ''}" data-act="custom-toggle" aria-expanded="${UI.customOpen}" aria-controls="custom-food-box">+ 自定义</button>` +
       `<button class="combo-chip" data-act="combo" data-v="bf">固定早餐</button>` +
       `<button class="combo-chip ${snkWarn ? 'is-warn' : ''}" data-act="combo" data-v="snk">4点加餐</button>` +
       freqChips;
@@ -3096,6 +3273,8 @@ function renderToday() {
               stepperHtml +
               `<button class="btn btn-danger btn-sm" data-act="e-del" data-id="${esc(e.id)}">删</button>` +
               `<div class="seg seg-sm edit-meal-seg">${mealBtns}</div>` +
+              `<div class="entry-macros">${macroEditor('entry-' + e.id, e, '本次份量的总营养')}</div>` +
+              `<button class="btn btn-primary btn-sm entry-macro-save" data-act="entry-save-macros" data-id="${esc(e.id)}">保存营养</button>` +
             `</div>`;
 
           return rowHtml + editBarHtml;
@@ -3199,15 +3378,16 @@ function renderStock() {
     } else {
       addPanelEl.hidden = false;
       const curCat = UI.addCat || 'veg';
-      const isInputActive = document.activeElement && document.activeElement.id === 'stock-new-name';
+      const isInputActive = addPanelEl.contains(document.activeElement);
       if (!isInputActive || !document.getElementById('stock-new-name')) {
         const curInput = document.getElementById('stock-new-name');
-        const curVal = curInput ? curInput.value : '';
+        const curVal = curInput ? curInput.value : (UI.stockNewName || '');
         addPanelEl.innerHTML =
           `<div class="glass-card stock-add-card">` +
             `<div class="glass-well stock-new-well">` +
               `<input id="stock-new-name" class="field stock-new-input" autocomplete="off" placeholder="输入新食材或调料名称…" value="${esc(curVal)}">` +
             `</div>` +
+            macroEditor('stock-new', {}, '每100g营养 · 可选，留空使用食材库数据') +
             `<div class="stock-add-bar">` +
               `<div class="seg seg-sm">` +
                 `<button class="seg-btn ${curCat === 'meat' ? 'is-active' : ''}" data-act="s-add-cat" data-v="meat">肉蛋奶</button>` +
@@ -3295,11 +3475,12 @@ function renderStock() {
       if (UI.spiceManage && UI.editItem) {
         const editingItem = gList.find(it => it.id === UI.editItem);
         if (editingItem) {
-          const dName = uiName(editingItem.name);
+          const dName = UI.stockNames?.[editingItem.id] ?? uiName(editingItem.name);
           const cat = stockCat(editingItem);
           editHtml =
-            `<div class="stock-edit spice-edit">` +
+            `<div class="stock-edit stock-edit-box spice-edit">` +
               `<div class="glass-well"><input class="field stock-edit-input" data-id="${esc(editingItem.id)}" value="${esc(dName)}"></div>` +
+              macroEditor('stock-' + editingItem.id, editingItem.nut?.kcal !== undefined ? editingItem.nut : getNut(editingItem.name), '每100g营养') +
               `<div class="stock-edit-bar">` +
                 `<div class="seg seg-sm">` +
                   `<button class="seg-btn ${cat === 'meat' ? 'is-active' : ''}" data-act="s-cat" data-id="${esc(editingItem.id)}" data-v="meat">肉蛋奶</button>` +
@@ -3307,7 +3488,7 @@ function renderStock() {
                   `<button class="seg-btn ${cat === 'spice' ? 'is-active' : ''}" data-act="s-cat" data-id="${esc(editingItem.id)}" data-v="spice">调料</button>` +
                 `</div>` +
                 `<div class="stock-edit-actions">` +
-                  `<button class="btn btn-primary btn-sm" data-act="s-edit-save" data-id="${esc(editingItem.id)}">完成</button>` +
+                  `<button class="btn btn-primary btn-sm" data-act="stock-edit-done" data-id="${esc(editingItem.id)}">完成</button>` +
                   `<button class="btn btn-danger btn-sm" data-act="s-del" data-id="${esc(editingItem.id)}">删</button>` +
                 `</div>` +
               `</div>` +
@@ -3352,7 +3533,7 @@ function renderStock() {
   const renderItemRow = (it) => {
     const isIn = (Number(it.qty) || 0) > 0;
     const soonBadge = isSoon(it) ? `<span class="badge-soon">快过期</span>` : '';
-    const dName = uiName(it.name);
+    const dName = UI.stockNames?.[it.id] ?? uiName(it.name);
     const cat = stockCat(it);
     const isEditing = UI.editItem === it.id;
     const mainRow =
@@ -3371,8 +3552,9 @@ function renderStock() {
     if (!isEditing) return mainRow;
 
     const editRow =
-      `<div class="stock-edit">` +
+      `<div class="stock-edit stock-edit-box">` +
         `<div class="glass-well"><input class="field stock-edit-input" data-id="${esc(it.id)}" value="${esc(dName)}"></div>` +
+        macroEditor('stock-' + it.id, it.nut?.kcal !== undefined ? it.nut : getNut(it.name), '每100g营养') +
         `<div class="stock-edit-bar">` +
           `<div class="seg seg-sm">` +
             `<button class="seg-btn ${cat === 'meat' ? 'is-active' : ''}" data-act="s-cat" data-id="${esc(it.id)}" data-v="meat">肉蛋奶</button>` +
@@ -3380,7 +3562,7 @@ function renderStock() {
             `<button class="seg-btn ${cat === 'spice' ? 'is-active' : ''}" data-act="s-cat" data-id="${esc(it.id)}" data-v="spice">调料</button>` +
           `</div>` +
           `<div class="stock-edit-actions">` +
-            `<button class="btn btn-primary btn-sm" data-act="s-edit-save" data-id="${esc(it.id)}">完成</button>` +
+            `<button class="btn btn-primary btn-sm" data-act="stock-edit-done" data-id="${esc(it.id)}">完成</button>` +
             `<button class="btn btn-danger btn-sm" data-act="s-del" data-id="${esc(it.id)}">删</button>` +
           `</div>` +
         `</div>` +
@@ -3580,10 +3762,12 @@ async function doParse() {
   }
   try {
     const res = await parseInput(raw);
+    Object.keys(UI.drafts).filter(k => k.startsWith('pv-')).forEach(k => delete UI.drafts[k]);
+    Object.keys(UI.autoCalories || {}).filter(k => k.startsWith('pv-')).forEach(k => delete UI.autoCalories[k]);
     UI.preview = (res && Array.isArray(res.items)) ? res.items : [];
     renderToday();
     if (res && res.failed) {
-      toast('解析失败');
+      toast('自动估算失败，可直接补充营养');
     } else if (res && Array.isArray(res.rest) && res.rest.length > 0) {
       const msg = res.rest.length > 1
         ? `没认出：${res.rest[0]} 等${res.rest.length}样`
@@ -3600,6 +3784,9 @@ async function doParse() {
 
 function commitPreview() {
   if (!Array.isArray(UI.preview) || !UI.preview.length) return;
+  for (let i = 0; i < UI.preview.length; i++) {
+    if ((UI.preview[i].editMacros || UI.preview[i].needsNutrition) && !syncPreviewMacros(i)) return;
+  }
   const items = UI.preview.slice();
   const count = items.length;
   const totalKcal = r0(items.reduce((s, x) => s + (Number(x.kcal) || 0), 0));
@@ -3989,15 +4176,45 @@ function bindEvents() {
         UI.meal = el.dataset.v;
         renderToday();
         break;
+      case 'custom-toggle':
+        UI.customOpen = !UI.customOpen; renderToday();
+        if (UI.customOpen) document.getElementById('cf-name').focus();
+        break;
+      case 'custom-cancel':
+        UI.customOpen = false; UI.customDraft = {name:'',g:100}; delete UI.drafts.cf; if (UI.autoCalories) delete UI.autoCalories.cf; renderToday();
+        break;
+      case 'custom-save-db-toggle':
+        UI.customSaveDb = !UI.customSaveDb; renderToday();
+        break;
+      case 'custom-auto':
+        autoKcal('cf', true);
+        break;
+      case 'custom-submit':
+        submitCustomFood();
+        break;
+      case 'entry-save-macros':
+        saveEntryMacros(el.dataset.id);
+        break;
+      case 'pv-macros': {
+        const i = Number(el.dataset.i), it = UI.preview[i]; if (!it) break;
+        if (it.editMacros && !syncPreviewMacros(i)) break;
+        it.editMacros = !it.editMacros; renderToday();
+        break;
+      }
       case 'parse':
         doParse();
         break;
       case 'pv-step':
+        if (UI.preview[Number(el.dataset.i)]?.editMacros && !syncPreviewMacros(Number(el.dataset.i))) break;
+        delete UI.drafts['pv-' + el.dataset.i];
         if (typeof pvStep === 'function') pvStep(Number(el.dataset.i), Number(el.dataset.v));
         renderToday();
         break;
       case 'pv-del':
         if (Array.isArray(UI.preview)) {
+          for (let i = Number(el.dataset.i); i < UI.preview.length; i++) {
+            UI.drafts['pv-' + i] = UI.drafts['pv-' + (i + 1)];
+          }
           UI.preview.splice(Number(el.dataset.i), 1);
           renderToday();
         }
@@ -4021,6 +4238,8 @@ function bindEvents() {
         const entry = list.find(x => x.id === el.dataset.id);
         if (entry && Number(entry.grams) > 0) {
           const nextG = Math.max(10, r0(Number(entry.grams) + Number(el.dataset.v)));
+          const pending = readMacros('entry-' + entry.id); if (!pending) break;
+          Object.assign(entry, pending); delete UI.drafts['entry-' + entry.id];
           if (typeof scaleEntry === 'function') scaleEntry(entry, nextG);
           fsave();
           renderToday();
@@ -4086,7 +4305,12 @@ function bindEvents() {
         UI.editItem = UI.editItem === el.dataset.id ? null : el.dataset.id;
         renderStock();
         break;
-      case 's-edit-save': {
+      case 's-edit-save':
+      case 'stock-edit-done': {
+        const item = itemById(el.dataset.id);
+        const macros = readMacros('stock-' + el.dataset.id); if (!macros) break;
+        if (item) { item.nut = {...macros,fb:Number(item.nut && item.nut.fb) || 0}; stockChanged(); }
+        delete UI.drafts['stock-' + el.dataset.id];
         const id = el.dataset.id;
         const inp = document.querySelector(`.stock-edit-input[data-id="${id}"]`);
         if (inp && id) {
@@ -4139,37 +4363,10 @@ function bindEvents() {
         break;
       }
       case 's-add-open': {
-        const q = (UI.stockQuery || '').trim();
-        if (q) {
-          const it = (typeof addItem === 'function') ? addItem(q) : null;
-          UI.stockQuery = '';
-          const searchEl = document.getElementById('stock-search');
-          if (searchEl) searchEl.value = '';
-          renderAll();
-          if (it) {
-            toast(`已加 ${uiName(it.name)}`, '撤销', () => {
-              const curIdx = DB.items.findIndex(x => x.id === it.id);
-              if (curIdx >= 0) {
-                if (typeof deleteItem === 'function') deleteItem(it.id);
-                else {
-                  DB.items.splice(curIdx, 1);
-                  if (typeof stockChanged === 'function') stockChanged();
-                  else bump();
-                }
-                renderAll();
-              }
-            });
-          }
-        } else {
-          UI.addOpen = !UI.addOpen;
-          renderStock();
-          if (UI.addOpen) {
-            setTimeout(() => {
-              const inp = document.getElementById('stock-new-name');
-              if (inp) inp.focus();
-            }, 50);
-          }
-        }
+        UI.addOpen = !UI.addOpen;
+        if (UI.addOpen) UI.stockNewName = UI.stockQuery || '';
+        renderStock();
+        if (UI.addOpen) document.getElementById('stock-new-name')?.focus();
         break;
       }
       case 's-add-cat':
@@ -4177,6 +4374,7 @@ function bindEvents() {
         renderStock();
         break;
       case 's-add-cancel':
+        UI.stockNewName = ''; delete UI.drafts['stock-new'];
         UI.addOpen = false;
         renderStock();
         break;
@@ -4236,6 +4434,23 @@ function bindEvents() {
         renderCook();
         break;
     }
+  });
+
+  document.addEventListener('input', e => {
+    const input = e.target;
+    if (input.dataset.prefix && input.dataset.macro) {
+      const prefix = input.dataset.prefix;
+      if (input.dataset.macro === 'kcal' && UI.autoCalories) delete UI.autoCalories[prefix];
+      const draft = UI.drafts[prefix] || (UI.drafts[prefix] = {});
+      for (const [k] of MACROS) draft[k] = document.getElementById(prefix + '-' + k)?.value ?? '';
+    }
+    if (input.id === 'cf-name') UI.customDraft.name = input.value;
+    if (input.id === 'cf-g') UI.customDraft.g = input.value;
+    if (input.id === 'stock-new-name') UI.stockNewName = input.value;
+  });
+  document.addEventListener('focusout', e => {
+    const input = e.target;
+    if (input.dataset.macro && input.dataset.macro !== 'kcal') autoKcal(input.dataset.prefix);
   });
 
   // 非点击事件绑定
@@ -4307,37 +4522,16 @@ function bindEvents() {
 
   const stockListEl = document.getElementById('stock-list');
   if (stockListEl) {
-    stockListEl.addEventListener('change', (e) => {
-      const inp = e.target;
-      if (inp && inp.classList && inp.classList.contains('stock-edit-input')) {
-        const id = inp.dataset.id;
-        const val = inp.value.trim();
-        if (typeof renameItem === 'function') {
-          renameItem(id, val);
-        } else {
-          const it = DB.items.find(x => x.id === id);
-          if (it && val && val !== uiName(it.name)) {
-            it.name = val;
-            if (typeof stockChanged === 'function') stockChanged();
-            else bump();
-          }
-        }
-        inp.blur();
-        renderAll();
+    stockListEl.addEventListener('input', e => {
+      if (e.target.classList.contains('stock-edit-input')) {
+        UI.stockNames = UI.stockNames || {}; UI.stockNames[e.target.dataset.id] = e.target.value;
       }
     });
     stockListEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && e.target && e.target.classList && e.target.classList.contains('stock-edit-input')) {
         e.preventDefault();
-        const inp = e.target;
-        const id = inp.dataset.id;
-        const val = inp.value.trim();
-        if (id && val && typeof renameItem === 'function') {
-          renameItem(id, val);
-        }
-        UI.editItem = null;
-        inp.blur();
-        renderAll();
+        const button = stockListEl.querySelector(`[data-act="stock-edit-done"][data-id="${e.target.dataset.id}"]`);
+        e.target.blur(); button?.click();
       }
     });
   }
