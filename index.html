@@ -3471,28 +3471,11 @@ function renderToday() {
     }
   }
 
-  // 2.3.3 常吃胶囊 #combo-row
+  // 2.3.3 自定义入口 #combo-row
   const comboRow = document.getElementById('combo-row');
   if (comboRow) {
-    const dayLog = (FIT.log && FIT.log[CUR_DAY]) || [];
-    const now = new Date();
-    const mins = now.getHours() * 60 + now.getMinutes();
-    const inSnackWin = mins >= 930 && mins <= 1020; // 15:30 - 17:00
-    const hasSnack = dayLog.some(e => e.meal === 'snack');
-    const snkWarn = isToday && inSnackWin && !hasSnack;
-
-    const freq = typeof frequentFoods === 'function' ? (frequentFoods(2) || []) : [];
-    const freqChips = freq.slice(0, 2).map(f => {
-      const lbl = typeof f === 'string' ? f : (f && (f.label || f.name) ? (f.label || f.name) : '');
-      if (!lbl) return '';
-      return `<button class="combo-chip" data-act="combo" data-v="${esc(lbl)}">${esc(lbl)}</button>`;
-    }).join('');
-
     comboRow.innerHTML =
-      `<button class="combo-chip combo-pill-custom ${UI.customOpen ? 'active is-active' : ''}" data-act="custom-toggle" aria-expanded="${UI.customOpen}" aria-controls="custom-food-box">+ 自定义</button>` +
-      `<button class="combo-chip" data-act="combo" data-v="bf">固定早餐</button>` +
-      `<button class="combo-chip ${snkWarn ? 'is-warn' : ''}" data-act="combo" data-v="snk">4点加餐</button>` +
-      freqChips;
+      `<button class="combo-chip combo-pill-custom ${UI.customOpen ? 'active' : ''}" data-act="custom-toggle" aria-expanded="${UI.customOpen}" aria-controls="custom-food-box">+ 自定义</button>`;
   }
 
   // 2.3.4 今日饮食流水 #meal-list
