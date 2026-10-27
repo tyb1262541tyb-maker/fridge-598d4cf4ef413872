@@ -1065,6 +1065,12 @@ svg{display:block}
   gap: 12px;
 }
 
+.body-date {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .body-field {
   display: flex;
   align-items: center;
@@ -1226,6 +1232,24 @@ svg{display:block}
   color: var(--muted);
   text-align: center;
 }
+
+.week-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 12px;
+  text-align: right;
+}
+
+.week-table th, .week-table td {
+  padding: 8px 2px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.week-table th { color: var(--muted); font-weight: 500; }
+.week-table th:first-child, .week-table td:first-child { text-align: left; }
+.week-table button { color: var(--blue); font: inherit; padding: 4px 0; }
 
 /* ==========================================================================
    3.4 Tab 2：库存
@@ -2231,6 +2255,7 @@ svg{display:block}
       <div id="meal-list" class="glass-card meal-list-card"></div>
 
       <div class="glass-card body-card">
+        <div id="body-date" class="body-date"></div>
         <label class="body-field">
           <span class="body-label">体重</span>
           <span class="glass-well body-well"><input id="wt-input" class="body-input" type="text" inputmode="decimal" autocomplete="off"></span>
@@ -2420,7 +2445,7 @@ function foodList(){const L=[];const names=new Set();
 
 /* ===== v5v GitHub 同步：私有数据仓库 data.json，逐条记录 updatedAt 后写赢，删除留墓碑 ===== */
 const SYNC_REPO_DEFAULT='tyb1262541tyb-maker/1b-life-data-cf88ce',SKEY='shenchu-sync',STKEY='shenchu-sync-st';
-const SY={cfg:jobj(SKEY),st:jobj(STKEY),state:'off',busy:false,timer:null,msg:''};
+const SY={cfg:jobj(SKEY),st:jobj(STKEY),state:'off',busy:false,timer:null,msg:'',rev:0,retry:0};
 SY.st.recs=SY.st.recs||{};
 const syRepo=()=>SY.cfg.repo||SYNC_REPO_DEFAULT,syPath=()=>SY.cfg.path||'data.json',syDev=()=>SY.cfg.dev||(/iPhone|iPad|Android|Mobile/i.test(navigator.userAgent)?'手机':'电脑'),syOn=()=>!!SY.cfg.token;
 function syHash(o){const s=JSON.stringify(o);let h=5381;for(let i=0;i<s.length;i++)h=(h*33+s.charCodeAt(i))|0;return(h>>>0).toString(36)+s.length}
@@ -2483,7 +2508,7 @@ function syIsDefault(k,d){if(k==='s')return syHash(d)===SY_DEF_S;
  if(k==='r')return !d||Object.keys(d).length===0;
  if(k.startsWith('c:'))return !!(d&&d.fixed);
  if(k.startsWith('i:')){const e=(EMBED.items||[]).find(x=>x.id===k.slice(2));return!!e&&syHash(d)===syHash(e)}return false}
-async function syRun(){if(!syOn()){sySet('off');return}if(SY.busy){SY.again=1;return}SY.busy=1;sySet('busy');
+async function syRun(){if(!syOn()){sySet('off');return}if(SY.busy){SY.again=1;return}clearTimeout(SY.timer);SY.busy=1;sySet('busy');
  try{let pulled=0,okd=0;for(let n=0;n<5;n++){const{sha,doc}=await syGet(),local=syLocalDoc();
    if(doc&&!SY.st.synced&&!SY.cfg.last){for(const k in local.recs){if(doc.recs&&doc.recs[k]&&!local.recs[k].del&&syIsDefault(k,local.recs[k].d))local.recs[k].u=Math.min(local.recs[k].u,1)}}
    const m=syMerge(doc,local);pulled=Object.keys(m.recs).filter(k=>!local.recs[k]||m.recs[k].u!==local.recs[k].u||JSON.stringify(m.recs[k].d)!==JSON.stringify(local.recs[k].d)).length;
@@ -2491,14 +2516,17 @@ async function syRun(){if(!syOn()){sySet('off');return}if(SY.busy){SY.again=1;re
    const same=doc&&JSON.stringify(doc.recs)===JSON.stringify(m.recs);syApply(m);SY.st.synced=1;lsTry(STKEY,JSON.stringify(SY.st));
    const me=m.devs[SY.cfg.id]||{};if(!same||!me.t||Date.now()-Date.parse(me.t)>36e5){m.devs[SY.cfg.id]={n:syDev(),t:new Date().toISOString(),v:DB.version}}else if(same){localStorage.removeItem(SKEY+'-dirty');okd=1;break}
    if(same){localStorage.removeItem(SKEY+'-dirty');okd=1;break}
-   const ns=await syPut(m,sha);if(ns){localStorage.removeItem(SKEY+'-dirty');okd=1;break}
+   // PUT 等待期间的修改属于下一轮，不能被这次成功清掉待同步标记。
+   const sentRev=SY.rev,ns=await syPut(m,sha);if(ns){if(SY.rev===sentRev)localStorage.removeItem(SKEY+'-dirty');else SY.again=1;okd=1;break}
    await new Promise(r=>setTimeout(r,400+n*600))}
-  if(okd){SY.cfg.last=new Date().toISOString();SY.cfg.pulled=pulled;lsTry(SKEY,JSON.stringify(SY.cfg));sySet('ok')}
+  if(okd){SY.retry=0;SY.cfg.last=new Date().toISOString();SY.cfg.pulled=pulled;lsTry(SKEY,JSON.stringify(SY.cfg));sySet(SY.again?'busy':'ok')}
   else{lsTry(SKEY+'-dirty','1');sySet('off','同步冲突，稍后自动重试')}
   if(typeof window.renderAll==='function')window.renderAll();
  }catch(e){sySet('off',String(e.message||e));lsTry(SKEY+'-dirty','1')}
- SY.busy=0;if(SY.again){SY.again=0;syRun()}}
-function syDirty(){if(SY.applying)return;try{syStamp()}catch(e){}lsTry(SKEY+'-dirty','1');if(!syOn())return;clearTimeout(SY.timer);sySet('busy');SY.timer=setTimeout(syRun,2000)}
+ finally{SY.busy=0}
+ if(SY.again){SY.again=0;return syRun()}
+ if(syOn()&&localStorage.getItem(SKEY+'-dirty'))SY.timer=setTimeout(syRun,Math.min(60000,2000*2**Math.min(SY.retry++,5)))}
+function syDirty(){if(SY.applying)return;SY.rev++;try{syStamp()}catch(e){}lsTry(SKEY+'-dirty','1');if(!syOn())return;clearTimeout(SY.timer);sySet('busy');if(SY.busy){SY.again=1;return}SY.timer=setTimeout(syRun,2000)}
 if(!SY.cfg.id){SY.cfg.id='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);lsTry(SKEY,JSON.stringify(SY.cfg))}
 {const s0=save,f0=fsave;save=function(){const r=s0();syDirty();return r};save.__orig=s0;fsave=function(){const r=f0();syDirty();return r};fsave.__orig=f0}
 </script>
@@ -2555,6 +2583,7 @@ const FORMULA = {
 // ===== 日期 =====
 const pad2 = n => String(n).padStart(2, '0');
 function dayKey(d){ return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function dk(d = new Date()){ return dayKey(d); }
 function addDays(key, n){ const [y, m, d] = key.split('-').map(Number); return dayKey(new Date(y, m - 1, d + n)); }
 function isToday(key){ return key === dayKey(new Date()); }
 function dateLabel(key){ const [y, m, d] = key.split('-').map(Number); return `${m}月${d}日 周${'日一二三四五六'[new Date(y, m - 1, d).getDay()]}`; }
@@ -3135,13 +3164,26 @@ function recipeEntry(r){
 }
 
 // ===== 趋势 =====
+const REST = 1998; // 沿用旧版周览的每日静息消耗（kcal）。
 function trendData(n){
   const out = [];
   for (let i = n - 1; i >= 0; i--) {
-    const k = addDays(CUR_DAY, -i), L = dayLog(k), t = dayTotals(k), w = FIT.wt[k];
-    out.push({k, has: L.length > 0, kcal: r0(t.kcal), p: t.p, kg: w && Number(w.kg) > 0 ? Number(w.kg) : null});
+    const k = addDays(CUR_DAY, -i), L = dayLog(k), t = dayTotals(k), w = FIT.wt[k], a = FIT.act[k]?.kcal;
+    const active = a != null && Number.isFinite(Number(a)) ? Number(a) : null;
+    const burn = REST + (active ?? 0);
+    out.push({k, has: L.length > 0, kcal: r0(t.kcal), p: t.p, kg: w && Number(w.kg) > 0 ? Number(w.kg) : null,
+      active, burn, deficit: L.length ? r0(burn - t.kcal) : null});
   }
   return out;
+}
+function weekOverview(D){
+  return `<div class="chart-title">周览 · 最近 7 天</div>` +
+    `<table class="week-table" aria-label="每日活动消耗与热量缺口（kcal）"><thead><tr>` +
+      `<th scope="col">日期</th><th scope="col">摄入</th><th scope="col">活动</th><th scope="col">消耗</th><th scope="col">缺口</th>` +
+    `</tr></thead><tbody>` + D.slice(-7).map(d =>
+      `<tr data-day="${d.k}"><td><button type="button" data-act="body-day" data-v="${d.k}" aria-label="查看和编辑 ${d.k} 身体记录">${shortDate(d.k)}</button></td>` +
+      `<td>${d.has ? d.kcal : '—'}</td><td>${d.active ?? '—'}</td><td>${d.burn}</td><td>${d.deficit ?? '—'}</td></tr>`
+    ).join('') + `</tbody></table><div class="trend-foot">单位 kcal · 消耗 = 静息 ${REST} + 活动；未记活动按 0 估算。<br>缺口 = 消耗 − 摄入；未记饮食时不算缺口。点日期可编辑。</div>`;
 }
 function trendSummary(D){
   const W = D.filter(d => d.kg != null);
@@ -3219,7 +3261,10 @@ function route(){
     UI.tab = 'stock'; if (a === 'rack') UI.stockFilter = 'spice';
   } else if (['cook','recipes','recipe','dinner'].includes(a)) {
     UI.tab = 'cook'; if (a === 'recipe' && RECIPES_15.some(r => r.id === b)) { UI.openRecipe = b; UI.cookFilter = 'all'; }
+  } else if (a === 'week') {
+    UI.tab = 'today'; UI.trendOpen = true; UI.trendDays = 7;
   } else UI.tab = 'today';
+  if (a === 'week') return;
   if (location.hash !== '#' + UI.tab) history.replaceState(null, '', '#' + UI.tab);
 }
 
@@ -3493,6 +3538,8 @@ function renderToday() {
   }
 
   // 2.3.5 体重与活动 .body-card（静态输入框只改值，焦点保护）
+  const bodyDate = document.getElementById('body-date');
+  if (bodyDate) bodyDate.textContent = `${isToday ? '今天' : CUR_DAY} · 身体记录${isToday ? '' : '（补录）'}`;
   const wtInput = document.getElementById('wt-input');
   if (wtInput && document.activeElement !== wtInput) {
     const wtObj = FIT.wt && FIT.wt[CUR_DAY];
@@ -3502,7 +3549,8 @@ function renderToday() {
   const actInput = document.getElementById('act-input');
   if (actInput && document.activeElement !== actInput) {
     const actObj = FIT.act && FIT.act[CUR_DAY];
-    actInput.value = actObj && Number(actObj.kcal) > 0 ? String(r0(actObj.kcal)) : '';
+    actInput.value = actObj && actObj.kcal != null && Number(actObj.kcal) >= 0 ? String(r0(actObj.kcal)) : '';
+    actInput.placeholder = '未记录';
   }
 
   // 2.3.6 趋势折叠卡 #trend-card
@@ -3525,7 +3573,7 @@ function renderToday() {
 
     const headHtml =
       `<div class="trend-head" data-act="trend-toggle">` +
-        `<span class="card-title">趋势</span>` +
+        `<span class="card-title">趋势 / 周览</span>` +
         `<span class="trend-summary">${esc(summaryText)}</span>` +
       `</div>`;
 
@@ -3546,6 +3594,7 @@ function renderToday() {
             `<button class="seg-btn ${days === 7 ? 'is-active' : ''}" data-act="trend-days" data-v="7">7天</button>` +
             `<button class="seg-btn ${days === 14 ? 'is-active' : ''}" data-act="trend-days" data-v="14">14天</button>` +
           `</div>` +
+          weekOverview(list) +
           `<div class="chart">${typeof svgKcal === 'function' ? svgKcal(D) : ''}</div>` +
           `<div class="chart">${typeof svgWeight === 'function' ? svgWeight(D) : ''}</div>` +
           `<div class="trend-foot">${esc(footText)}</div>` +
@@ -4077,7 +4126,7 @@ function saveBody() {
       }
     } else {
       const val = Math.round(parseFloat(rawWt) * 10) / 10;
-      if (Number.isFinite(val) && val > 0) {
+      if (Number.isFinite(val) && val >= 30 && val <= 250) {
         if (curWt !== val) {
           FIT.wt[CUR_DAY] = { kg: val, at: Date.now() };
           changed = true;
@@ -4095,8 +4144,8 @@ function saveBody() {
         changed = true;
       }
     } else {
-      const val = r0(parseFloat(rawAct));
-      if (Number.isFinite(val) && val > 0) {
+      const parsed = parseFloat(rawAct), val = Math.round(parsed);
+      if (Number.isFinite(parsed) && parsed >= 0 && parsed <= 5000) {
         if (curAct !== val) {
           FIT.act[CUR_DAY] = { kcal: val, at: Date.now() };
           changed = true;
@@ -4321,6 +4370,13 @@ function bindEvents() {
         if (typeof fn === 'function') fn();
         break;
       }
+      case 'body-day':
+        CUR_DAY = el.dataset.v;
+        UI.preview = [];
+        UI.editEntry = null;
+        renderToday();
+        document.querySelector('.body-card')?.scrollIntoView({block:'center', behavior:'smooth'});
+        break;
       case 'day-prev':
         CUR_DAY = _shiftDayStr(CUR_DAY, -1);
         UI.preview = [];
@@ -4765,12 +4821,69 @@ function bindEvents() {
   });
 }
 
+// Apple 快捷指令 / 健康导入：先保存，再进行首次云端合并与推送。
+function importHealth() {
+  const q = new URLSearchParams(location.search);
+  if (!['hk','active','act','burn','weight','wt'].some(k => q.has(k))) return false;
+  const num = s => {
+    if (s == null) return null;
+    s = String(s).replace(/\s|\u00a0|\u202f|'/g, '');
+    if (s.includes('-')) return null;
+    s = s.replace(/(?:kcal|千卡|大卡|kg|公斤)$/i, '');
+    if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) {
+      s = s.replace(/,/g, '');
+    } else if (/^\d{1,3}(\.\d{3})+,\d+$/.test(s)) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else if (/^(?:\d+(?:[.,]\d*)?|[.,]\d+)$/.test(s)) {
+      s = s.replace(',', '.');
+    } else return null;
+    const v = Number(s);
+    return Number.isFinite(v) ? v : null;
+  };
+  const rawDate = (q.get('date') ?? q.get('d') ?? '').trim();
+  const today = dk();
+  let d = today;
+  if (rawDate) {
+    const m = rawDate.match(/^(\d{4})([-./])(\d{1,2})\2(\d{1,2})$/);
+    if (m) d = `${m[1]}-${m[3].padStart(2,'0')}-${m[4].padStart(2,'0')}`;
+    if (!m || dk(new Date(d + 'T12:00:00')) !== d || d > today) {
+      history.replaceState(null, '', location.pathname + location.hash);
+      renderAll();
+      setTimeout(() => toast('⚠️ 健康导入：日期无效'), 300);
+      return true;
+    }
+  }
+  const a = num(q.get('active') ?? q.get('act') ?? q.get('burn'));
+  const w = num(q.get('weight') ?? q.get('wt'));
+  const msg = [], now = Date.now();
+  FIT.act = FIT.act || {};
+  FIT.wt = FIT.wt || {};
+  if (a != null && a >= 0 && a <= 5000) {
+    FIT.act[d] = {kcal: Math.round(a), at: now};
+    msg.push(`活动 ${Math.round(a)} kcal`);
+  }
+  if (w != null && w >= 30 && w <= 250) {
+    const kg = Math.round(w * 10) / 10;
+    FIT.wt[d] = {kg, at: now};
+    msg.push(`体重 ${kg} kg`);
+  }
+  if (msg.length) {
+    fsave();
+    if (d <= dk()) CUR_DAY = d;
+    if (d !== dk()) UI.trendOpen = true;
+  }
+  history.replaceState(null, '', location.pathname + location.hash);
+  renderAll();
+  setTimeout(() => toast(msg.length ? '✅ 已从健康导入' + (d !== dk() ? '（' + d.slice(5) + '）' : '') + '：' + msg.join('、') : '⚠️ 健康导入：没有可用的数字'), 300);
+  return true;
+}
+
 function boot() {
   if (typeof syStamp === 'function') syStamp();
   if (!UI.meal && typeof curMeal === 'function') UI.meal = curMeal();
   bindEvents();
   if (typeof route === 'function') route();
-  renderAll();
+  if (!importHealth()) renderAll();
   if (typeof syOn === 'function' && syOn()) syRun();
 }
 
