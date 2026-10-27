@@ -2191,7 +2191,7 @@ const b64e=s=>btoa(unescape(encodeURIComponent(s))),b64d=s=>decodeURIComponent(e
 async function syGet(){const r=await fetch(`https://api.github.com/repos/${syRepo()}/contents/${syPath()}?t=${Date.now()}`,{cache:'no-store',headers:{Authorization:'Bearer '+SY.cfg.token,Accept:'application/vnd.github+json'}});
  if(r.status===404)return{sha:null,doc:null};if(!r.ok)throw new Error('GET '+r.status);const j=await r.json();
  let txt;if(j.content)txt=b64d(j.content);else{const rr=await fetch(j.git_url,{cache:'no-store',headers:{Authorization:'Bearer '+SY.cfg.token,Accept:'application/vnd.github.raw'}});txt=await rr.text()}
- const doc=JSON.parse(txt);return{sha:j.sha,doc}}
+ const doc=JSON.parse(txt);if(!doc||typeof doc!=='object'||Array.isArray(doc)||(doc.recs!=null&&(typeof doc.recs!=='object'||Array.isArray(doc.recs))))throw new Error('云端数据格式不对');return{sha:j.sha,doc}}
 async function syPut(doc,sha){const r=await fetch(`https://api.github.com/repos/${syRepo()}/contents/${syPath()}`,{method:'PUT',cache:'no-store',headers:{Authorization:'Bearer '+SY.cfg.token,Accept:'application/vnd.github+json'},
  body:JSON.stringify({message:'sync '+new Date().toISOString()+' '+syDev()+' v'+DB.version,content:b64e(JSON.stringify(doc)),sha:sha||undefined})});
  if(r.status===409||r.status===422)return null;if(!r.ok)throw new Error('PUT '+r.status);return(await r.json()).content.sha}
