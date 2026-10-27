@@ -2829,21 +2829,37 @@ function foodToItem(f, g, cooked){
   return mkPreview((cooked && !nm.startsWith('熟') ? '熟' : '') + nm, g, per, f.key, mode);
 }
 // 连写切分：100鸡蛋35燕麦200牛奶 / 鸡蛋100燕麦35牛奶200。数量 = 数字(+g/ml/个/勺/包/斤/两/份)，百分比、营养速记、名字里的数字不算数量。
-const QTY_UNIT = 'kg|千克|公斤|g|克|毫升|ml|个|颗|只|枚|勺|包(?![子菜])|斤|两|份';
-const QTY_RE = '(?<![A-Za-z№#.\\d])(?:(\\d+(?:\\.\\d+)?)(?![.\\d]*[%％])|([一二两三四五六七八九十半])(?=\\s*(?:' + QTY_UNIT + ')))\\s*(' + QTY_UNIT + ')?';
+const QTY_UNIT = '(?:kg|g|ml)(?![A-Za-z])|千克|公斤|克|毫升|个|颗|只|枚|勺|包(?![子菜])|斤|两|份';
+// 整段读取中文数量；不支持的写法也要保留，不能从中间截取一个较小的数字。
+const CN_QTY_CHARS = '零〇一二两三四五六七八九十百千万亿半点几多余又分之';
+const QTY_RE = '(?<![№#.\\d' + CN_QTY_CHARS + '])' +
+  '(?:(\\d+(?:\\.\\d+)?)(?![.\\d%％])(?:(?=\\s*(?:' + QTY_UNIT + '))|(?![' + CN_QTY_CHARS + ']))' +
+  '|([' + CN_QTY_CHARS + '\\d]+)(?=\\s*(?:' + QTY_UNIT + ')))\\s*(' + QTY_UNIT + ')?';
 const MACRO_RE = /(\d+(?:\.\d+)?)\s*(kcal|千卡|大卡|卡|[pfc])(?=\s|$|\d)/gi;
 const CN_NUM = {'半':0.5,'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10};
+function chineseQty(s){
+  if (CN_NUM[s] !== undefined) return CN_NUM[s];
+  // 支持一至九十九及「半」；百、千、小数、约数等交给待确认流程。
+  const m = s.match(/^([一二两三四五六七八九]?)十([一二三四五六七八九]?)$/);
+  return m ? (m[1] ? CN_NUM[m[1]] : 1) * 10 + (m[2] ? CN_NUM[m[2]] : 0) : null;
+}
+function maskNameNumbers(s){
+  // 等长遮罩只用于找数量，切分及名称仍取原文；0卡也不能当营养速记。
+  return s.replace(/\d+(?:[.,]\d+)?\s*[%％]|(?<![\d.])0(?:\.0+)?\s*[脂糖卡]/g, m => '·'.repeat(m.length));
+}
 function qtyTokens(s){
-  const re = new RegExp(QTY_RE, 'gi'), out = [];
+  const re = new RegExp(QTY_RE, 'gi'), out = [], masked = maskNameNumbers(s);
   let m;
-  while ((m = re.exec(s))) {
-    if (m[1] === '0' && /^\s*糖/.test(s.slice(m.index + 1))) continue;
-    out.push({s: m.index, e: m.index + m[0].length, n: m[1] !== undefined ? +m[1] : CN_NUM[m[2]], u: (m[3] || '').toLowerCase()});
+  while ((m = re.exec(masked))) {
+    // 英文名称后的数量须带明确单位，B12、whey30 等名称内部数字不作克重。
+    if (/[A-Za-z]/.test(s[m.index - 1] || '') && !m[3]) continue;
+    const value = m[1] ?? m[2];
+    out.push({s: m.index, e: m.index + m[0].length, n: /^\d+(?:\.\d+)?$/.test(value) ? +value : chineseQty(value), u: (m[3] || '').toLowerCase()});
   }
   return out;
 }
 function splitConnected(p){
-  if (new RegExp(MACRO_RE.source, 'i').test(p)) return [p];
+  if (new RegExp(MACRO_RE.source, 'i').test(maskNameNumbers(p))) return [p];
   const ns = qtyTokens(p);
   if (ns.length < 2) return [p];
   // 数量与食物名交替成 token 序列：数字在前 → 数字绑后面的名字；名字在前 → 名字绑后面的数字
@@ -2884,6 +2900,7 @@ function parseQty(seg){
   const q = qtyTokens(seg)[0];
   const name = (q ? seg.slice(0, q.s) + ' ' + seg.slice(q.e) : seg).replace(/\s+/g, ' ').trim();
   if (!q) return {name, grams: 100};
+  if (q.n === null) return {name, grams: null};
   const grams = qtyGrams(q.n, q.u, name);
   return {name, grams: grams > 0 ? grams : null};
 }
@@ -2893,7 +2910,9 @@ function parseLocal(text){
   for (const seg of splitInput(text)) {
     // 快捷数字均为本次总量；克数只用于以后按比例增减。
     const explicit = {};
-    const namePart = seg.replace(MACRO_RE, (_, n, unit) => {
+    const masked = maskNameNumbers(seg);
+    const namePart = seg.replace(MACRO_RE, (match, n, unit, offset) => {
+      if (masked.slice(offset, offset + match.length) !== match) return match;
       explicit[/^(kcal|千卡|大卡|卡)$/i.test(unit) ? 'kcal' : unit.toLowerCase()] = +n; return ' ';
     }).trim();
     if (Object.keys(explicit).length) {
