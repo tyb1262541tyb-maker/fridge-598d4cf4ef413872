@@ -1392,8 +1392,24 @@ svg{display:block}
 
 .stock-row.is-out,
 .stock-row.out {
-  opacity: 0.45;
+  opacity: 1;
 }
+.stock-row.is-out .stock-name,
+.stock-row.is-out .status-pill {
+  opacity: 0.48;
+}
+
+
+.stock-swipe-wrap { position: relative; overflow: hidden; margin: 0 -20px; border-bottom: 1px solid var(--line); user-select: none; -webkit-user-select: none; touch-action: pan-y; }
+.stock-swipe-wrap:last-child { border-bottom: none; }
+.stock-swipe-bg { position: absolute; inset: 0; display: flex; align-items: stretch; justify-content: space-between; pointer-events: none; opacity: 0; transition: opacity .16s ease; }
+.stock-swipe-wrap.is-swiping .stock-swipe-bg, .stock-swipe-wrap.is-open .stock-swipe-bg { opacity: 1; }
+.stock-swipe-btn { width: 76px; flex-shrink: 0; border: none; color: #fff; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.stock-swipe-btn.is-edit { background: #007aff; }
+.stock-swipe-btn.is-del { background: #ff3b30; }
+.stock-row.stock-row-front { position: relative; z-index: 2; min-height: 52px; padding: 10px 20px; border-bottom: none; background: #FFFFFF; opacity: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; will-change: transform; transition: transform .24s cubic-bezier(.22,1,.36,1), background-color .18s ease; }
+.stock-row.stock-row-front.is-dragging { transition: none !important; }
+.stock-row.stock-row-front.exp-soon { background: #FFF6D6 linear-gradient(90deg, #FFF3C4 0%, #FFF8DE 100%); }
 
 .stock-name,
 .stock-main {
@@ -3611,6 +3627,88 @@ function renderToday() {
   }
 }
 
+// Document delegation is installed once, independently of stock renders.
+(function bindStockSwipe() {
+  let drag = null, opened = null, suppressUntil = 0, dispatching = false;
+  const front = wrap => wrap.querySelector('.stock-row-front');
+  function settle(wrap, x) {
+    front(wrap).classList.remove('is-dragging');
+    front(wrap).style.transform = `translateX(${x}px)`;
+    wrap.classList.remove('is-swiping', 'is-dragging');
+    wrap.classList.toggle('is-open', x !== 0);
+    wrap.dataset.swipeOffset = String(x);
+    if (opened === wrap) opened = null;
+    if (x) opened = wrap;
+  }
+  function start(e, x, y, source, key) {
+    if (drag) return;
+    const wrap = e.target.closest?.('.stock-swipe-wrap');
+    if (opened && opened !== wrap) settle(opened, 0);
+    if (!wrap || e.target.closest('.status-pill, [data-act="s-toggle"], .stock-edit, .stock-swipe-btn')) return;
+    drag = {wrap, x, y, source, key, offset: Number(wrap.dataset.swipeOffset) || 0, dx: 0, active: false};
+  }
+  function move(e, x, y) {
+    if (!drag) return;
+    const dx = x - drag.x, dy = y - drag.y;
+    if (!drag.active) {
+      if (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)) { drag = null; return; }
+      if (!(Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy) * 1.2)) return;
+      drag.active = true;
+      drag.wrap.classList.add('is-swiping', 'is-dragging');
+      front(drag.wrap).classList.add('is-dragging');
+    }
+    if (e.cancelable) e.preventDefault();
+    drag.dx = dx;
+    front(drag.wrap).style.transform = `translateX(${Math.max(-160, Math.min(160, drag.offset + dx))}px)`;
+  }
+  function end(cancelled = false) {
+    if (!drag) return;
+    const d = drag; drag = null;
+    if (!d.active) return;
+    suppressUntil = Date.now() + 450;
+    const dx = d.offset + d.dx;
+    if (cancelled) { settle(d.wrap, 0); return; }
+    const act = dx >= 88 ? 's-edit' : dx <= -110 ? 's-del' : null;
+    settle(d.wrap, act ? 0 : dx >= 36 ? 76 : dx <= -36 ? -76 : 0);
+    if (act) {
+      // Use the existing delegated edit/delete handlers, including undo toast.
+      dispatching = true;
+      try { d.wrap.querySelector(`[data-act="${act}"]`).click(); }
+      finally { dispatching = false; }
+    }
+  }
+  document.addEventListener('click', e => {
+    if (dispatching) return;
+    if (Date.now() < suppressUntil) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+    if (opened && !opened.contains(e.target)) settle(opened, 0);
+  }, true);
+  document.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) { end(true); return; }
+    const t = e.touches[0]; start(e, t.clientX, t.clientY, 'touch', t.identifier);
+  }, {passive: true});
+  document.addEventListener('touchmove', e => {
+    if (drag?.source !== 'touch') return;
+    if (e.touches.length !== 1) { end(true); return; }
+    const t = Array.from(e.touches).find(t => t.identifier === drag.key);
+    if (t) move(e, t.clientX, t.clientY);
+  }, {passive: false});
+  document.addEventListener('touchend', () => { if (drag?.source === 'touch') end(); });
+  document.addEventListener('touchcancel', () => { if (drag?.source === 'touch') end(true); });
+  if ('PointerEvent' in window) {
+    document.addEventListener('pointerdown', e => {
+      if (e.pointerType !== 'touch' && e.button === 0 && e.isPrimary !== false) start(e, e.clientX, e.clientY, 'pointer', e.pointerId);
+    });
+    document.addEventListener('pointermove', e => { if (drag?.source === 'pointer' && drag.key === e.pointerId) move(e, e.clientX, e.clientY); });
+    document.addEventListener('pointerup', e => { if (drag?.source === 'pointer' && drag.key === e.pointerId) end(); });
+    document.addEventListener('pointercancel', e => { if (drag?.source === 'pointer' && drag.key === e.pointerId) end(true); });
+  } else {
+    document.addEventListener('mousedown', e => { if (e.button === 0) start(e, e.clientX, e.clientY, 'mouse'); });
+    document.addEventListener('mousemove', e => { if (drag?.source === 'mouse') move(e, e.clientX, e.clientY); });
+    document.addEventListener('mouseup', () => { if (drag?.source === 'mouse') end(); });
+  }
+  window.addEventListener('blur', () => end(true));
+})();
+
 function renderStock() {
   const stockListEl = document.getElementById('stock-list');
   // 2.0 & 4.8：当焦点在 #stock-list 内的行内输入框时，整个跳过
@@ -3786,20 +3884,18 @@ function renderStock() {
 
   const renderItemRow = (it) => {
     const isIn = (Number(it.qty) || 0) > 0;
-    const soonBadge = isSoon(it) ? `<span class="badge-soon">快过期</span>` : '';
     const dName = UI.stockNames?.[it.id] ?? uiName(it.name);
     const cat = stockCat(it);
     const isEditing = UI.editItem === it.id;
     const mainRow =
-      `<div class="stock-row ${isIn ? '' : 'is-out'}">` +
-        `<button class="stock-name" data-act="s-edit" data-id="${esc(it.id)}">` +
-          `<span class="stock-name-text">${esc(dName)}</span>` +
-          soonBadge +
-        `</button>` +
-        `<div class="stock-actions">` +
-          `<button class="status-pill ${isIn ? 'is-in' : 'is-out'}" data-act="s-toggle" data-id="${esc(it.id)}">${isIn ? '🟢 有' : '⚪ 缺'}</button>` +
-          `<button class="stock-act-btn ${isEditing ? 'is-active' : ''}" data-act="s-edit" data-id="${esc(it.id)}">改</button>` +
-          `<button class="stock-act-btn is-del" data-act="s-del" data-id="${esc(it.id)}">删</button>` +
+      `<div class="stock-swipe-wrap" data-swipe-id="${esc(it.id)}">` +
+        `<div class="stock-swipe-bg">` +
+          `<button type="button" class="stock-swipe-btn is-edit" data-act="s-edit" data-id="${esc(it.id)}">修改</button>` +
+          `<button type="button" class="stock-swipe-btn is-del" data-act="s-del" data-id="${esc(it.id)}">删除</button>` +
+        `</div>` +
+        `<div class="stock-row stock-row-front ${isIn ? '' : 'is-out'}${isSoon(it) ? ' exp-soon' : ''}">` +
+          `<span class="stock-name"><span class="stock-name-text">${esc(dName)}</span></span>` +
+          `<button type="button" class="status-pill ${isIn ? 'is-in' : 'is-out'}" data-act="s-toggle" data-id="${esc(it.id)}">${isIn ? '🟢 有' : '⚪ 缺'}</button>` +
         `</div>` +
       `</div>`;
 
