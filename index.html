@@ -3629,7 +3629,7 @@ function renderToday() {
 
 // Document delegation is installed once, independently of stock renders.
 (function bindStockSwipe() {
-  let drag = null, opened = null, suppressUntil = 0, dispatching = false;
+  let drag = null, opened = null, suppressUntil = 0, suppressWrap = null, dispatching = false;
   const front = wrap => wrap.querySelector('.stock-row-front');
   function settle(wrap, x) {
     front(wrap).classList.remove('is-dragging');
@@ -3642,6 +3642,7 @@ function renderToday() {
   }
   function start(e, x, y, source, key) {
     if (drag) return;
+    suppressWrap = null; suppressUntil = 0;
     const wrap = e.target.closest?.('.stock-swipe-wrap');
     if (opened && opened !== wrap) settle(opened, 0);
     if (!wrap || e.target.closest('.status-pill, [data-act="s-toggle"], .stock-edit, .stock-swipe-btn')) return;
@@ -3665,6 +3666,7 @@ function renderToday() {
     if (!drag) return;
     const d = drag; drag = null;
     if (!d.active) return;
+    suppressWrap = d.wrap;
     suppressUntil = Date.now() + 450;
     const dx = d.offset + d.dx;
     if (cancelled) { settle(d.wrap, 0); return; }
@@ -3679,8 +3681,15 @@ function renderToday() {
   }
   document.addEventListener('click', e => {
     if (dispatching) return;
-    if (Date.now() < suppressUntil) { e.preventDefault(); e.stopImmediatePropagation(); return; }
-    if (opened && !opened.contains(e.target)) settle(opened, 0);
+    const wrap = e.target.closest?.('.stock-swipe-wrap');
+    const button = e.target.closest?.('button, a, input, select, textarea, [role="button"], [data-act], .status-pill, .stock-edit');
+    if (suppressWrap && Date.now() >= suppressUntil) { suppressWrap = null; suppressUntil = 0; }
+    if (suppressWrap && wrap === suppressWrap && !button && e.detail !== 0) {
+      suppressWrap = null; suppressUntil = 0;
+      e.preventDefault(); e.stopImmediatePropagation(); return;
+    }
+    if (opened && (!opened.contains(e.target) ||
+        (wrap === opened && !button && e.target.closest('.stock-row-front')))) settle(opened, 0);
   }, true);
   document.addEventListener('touchstart', e => {
     if (e.touches.length !== 1) { end(true); return; }
