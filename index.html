@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>1b的奇妙人生</title>
 <style>
@@ -1390,6 +1391,19 @@ svg{display:block}
   border-bottom: none;
 }
 
+.stock-group-card { overflow: hidden; }
+.stock-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+.stock-group-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.stock-group-count { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.stock-list-card > .add-row:last-child { border-bottom: none; }
+
 .stock-row.is-out,
 .stock-row.out {
   opacity: 1;
@@ -2454,7 +2468,8 @@ function yieldOf(f){const g=grainOf(f);if(g)return g;if(f.cooked||f.proc)return 
  for(const[re,y,t]of YIELD)if(re.test(f.name))return y?{y,t}:null;return null}
 
 function foodList(){const L=[];const names=new Set();
- DB.items.filter(i=>i.kind!=='调料').forEach(i=>{names.add(fnorm(i.name));L.push({key:'i:'+i.id,id:i.id,src:'item',name:i.name,ru:i.orig&&i.orig!==i.name?i.orig:'',have:i.qty>0,nut:i.nut && i.nut.kcal !== undefined ? i.nut : getNut(i.name),group:i.group})});
+ // 多食物记录只从饮食识别候选中排除，保留用户库存原数据。
+ DB.items.filter(i=>i.kind!=='调料'&&!isMultiFoodStockInput(i.name)).forEach(i=>{names.add(fnorm(i.name));L.push({key:'i:'+i.id,id:i.id,src:'item',name:i.name,ru:i.orig&&i.orig!==i.name?i.orig:'',have:i.qty>0,nut:i.nut && i.nut.kcal !== undefined ? i.nut : getNut(i.name),group:i.group})});
  (EMBED.foodSeed||[]).forEach(f=>{if((FIT.hideSeed||[]).includes(f.id))return;if(f.alias&&DB.items.some(i=>i.name===f.alias&&i.kind!=='调料'))return;if(names.has(fnorm(f.name)))return;
   L.push({key:'s:'+f.id,id:f.id,src:'seed',name:f.name,ru:'',have:false,nut:f.nut,cooked:f.cooked,proc:f.proc,group:''})});
  (EMBED.catalog||[]).forEach((c,idx)=>{const nm=c.zh||c.name||'';if(!nm||names.has(fnorm(nm)))return;names.add(fnorm(nm));
@@ -2553,7 +2568,8 @@ if(!SY.cfg.id){SY.cfg.id='d'+Date.now().toString(36)+Math.random().toString(36).
 // ===== UI 核心层：常量 =====
 const MEALS = [{k:'breakfast',n:'早'},{k:'lunch',n:'午'},{k:'dinner',n:'晚'},{k:'snack',n:'加'}];
 const MEAL_N = {breakfast:'早', lunch:'午', dinner:'晚', snack:'加'};
-const STOCK_FILTERS = [{k:'all',n:'全部'},{k:'meat',n:'肉蛋奶'},{k:'veg',n:'菜果主食'},{k:'spice',n:'调料'},{k:'soon',n:'快过期'},{k:'out',n:'缺货'}];
+const STOCK_FILTERS = [{k:'meat',n:'肉蛋奶'},{k:'veg',n:'菜果主食'},{k:'spice',n:'调料'},{k:'soon',n:'快过期'},{k:'out',n:'缺货'}];
+const STOCK_GROUP_ORDER = ['蛋奶','肉禽','海鲜','冷冻加工','蔬菜','水果','主食','饮品','腌菜罐头','调料'];
 const CAT_N = {meat:'肉蛋奶', veg:'菜果主食', spice:'调料'};
 const CAT_SET = {
   meat:  {kind:'食材', group:'肉禽', rack:false},
@@ -2617,7 +2633,7 @@ const UI = {
   meal: curMeal(), preview: [], editEntry: null, flashIds: [],
   customOpen: false, customSaveDb: true, customDraft: {name:'', g:100}, drafts: {},
   trendOpen: false, trendDays: 14,
-  stockFilter: 'all', stockQuery: '', editItem: null,
+  stockFilter: 'meat', stockQuery: '', editItem: null,
   addOpen: false, addCat: 'veg', spiceManage: false,
   get addingStock() { return this.addOpen; },
   set addingStock(v) { this.addOpen = v; },
@@ -2810,6 +2826,7 @@ function submitCustomFood(){
     item = DB.items.find(i => i.kind !== '调料' && i.name.trim().toLowerCase() === name.toLowerCase());
     previous = item ? JSON.parse(JSON.stringify(item)) : null;
     if (!item) item = addItem(name, 'veg');
+    if (!item) return;
     const nut = {kcal:r0(macros.kcal * 100 / grams),p:r1(macros.p * 100 / grams),f:r1(macros.f * 100 / grams),c:r1(macros.c * 100 / grams),fb:0};
     item.nut = nut; stockChanged(); written = JSON.stringify(item);
   }
@@ -2844,6 +2861,10 @@ function saveEntryMacros(id){
 }
 
 // ===== 解析 =====
+function normFoodInput(s){
+  return String(s ?? '').replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[．。]/g, '.').replace(/％/g, '%').replace(/[\u200B-\u200D\uFEFF]/g, '');
+}
 let FOODS = null;                       // 库存改动后置 null
 function foods(){ return FOODS || (FOODS = foodList()); }
 // 口语简称 → 库内名字候选（正则对 fnorm 后的名字，按优先级；库存项在 foodMatch 里再加分）
@@ -2965,7 +2986,7 @@ function chineseQty(s){
 }
 function maskNameNumbers(s){
   // 等长遮罩只用于找数量，切分及名称仍取原文；0卡也不能当营养速记。
-  return s.replace(/\d+(?:[.,]\d+)?\s*[%％]|(?<![\d.])0(?:\.0+)?\s*[脂糖卡]/g, m => '·'.repeat(m.length));
+  return s.replace(/\d+\s*合\s*\d+/g, m => '_'.repeat(m.length)).replace(/\d+(?:[.,]\d+)?\s*[%％]|(?<![\d.])0(?:\.0+)?\s*[脂糖卡]/g, m => '·'.repeat(m.length));
 }
 function qtyTokens(s){
   const re = new RegExp(QTY_RE, 'gi'), out = [], masked = maskNameNumbers(s);
@@ -2979,6 +3000,7 @@ function qtyTokens(s){
   return out;
 }
 function splitConnected(p){
+  p = normFoodInput(p);
   if (new RegExp(MACRO_RE.source, 'i').test(maskNameNumbers(p))) return [p];
   const ns = qtyTokens(p);
   if (ns.length < 2) return [p];
@@ -2997,10 +3019,15 @@ function splitConnected(p){
     if (b && a.t !== b.t) { out.push(p.slice(a.s, b.e)); i += 2; }
     else { out.push(p.slice(a.s, a.e)); i++; }
   }
-  return out.map(s => s.trim()).filter(Boolean);
+  const parts = out.map(s => s.trim()).filter(Boolean);
+  // 切分只依赖名称和有效数量，新食物无需先在食材库中命中。
+  return parts.every(seg => {
+    const q = parseQty(seg);
+    return qtyTokens(seg).length === 1 && /[\u4e00-\u9fa5a-zA-Z]/.test(q.name) && q.grams > 0;
+  }) ? parts : [p];
 }
 function splitInput(t){
-  return String(t || '').split(/[，,、;；\n]+/).map(s => s.trim()).filter(Boolean).flatMap(splitConnected);
+  return normFoodInput(t).split(/[，,、;；\n]+/).map(s => s.trim()).filter(Boolean).flatMap(splitConnected);
 }
 const GRAM_RE = /^(熟|生)?\s*(.+?)\s*(\d+(?:\.\d+)?)\s*(g|克|ml|毫升)?$/i;
 const PROTEIN_RE = /蛋白粉|乳清|protein|whey/i;
@@ -3025,9 +3052,12 @@ function parseQty(seg){
   return {name, grams: grams > 0 ? grams : null};
 }
 function parseLocal(text){
+  text = normFoodInput(text);
   const items = [], rest = [];
   const push = (it, seg) => { it.rawSeg = seg; items.push(it); };
-  for (const seg of splitInput(text)) {
+  const segments = splitInput(text);
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
     // 快捷数字均为本次总量；克数只用于以后按比例增减。
     const explicit = {};
     const masked = maskNameNumbers(seg);
@@ -3038,7 +3068,8 @@ function parseLocal(text){
     if (Object.keys(explicit).length) {
       const gram = namePart.match(GRAM_RE);
       const name = (gram ? gram[2] : namePart).trim();
-      if (!name) { rest.push(seg); continue; }
+      // 多食物串附带总营养时无法安全分摊，保留原文等待确认。
+      if (!name || qtyTokens(name).length >= 1) { rest.push(seg); continue; }
       const grams = gram && +gram[3] > 0 ? +gram[3] : 100;
       const p = explicit.p || 0, fat = explicit.f || 0, c = explicit.c || 0;
       const kcal = explicit.kcal ?? r0(p * 4 + fat * 9 + c * 4);
@@ -3047,6 +3078,12 @@ function parseLocal(text){
     }
     const q = parseQty(seg);
     if (!q.name) { rest.push(seg); continue; }
+    if (qtyTokens(q.name).length >= 1) {
+      const retry = splitConnected(seg);
+      if (retry.length >= 2) segments.splice(i + 1, 0, ...retry);
+      else rest.push(seg);
+      continue;
+    }
     const pre = q.name.match(/^(熟|生)(?!菜|抽|姜|粉|蚝|鱼)(.+)$/);
     const core = pre ? pre[2] : q.name;
     const grams = q.grams;
@@ -3076,6 +3113,61 @@ function pvStep(i, d){
 
 // ===== 库存 =====
 function stockCat(it){ if (it.kind === '调料') return 'spice'; return MEAT_GROUPS.includes(it.group) ? 'meat' : 'veg'; }
+function stockGroupTitle(it){
+  if (STOCK_GROUP_ORDER.includes(it.group) && (!String(it.id || '').startsWith('u') || !['肉禽','蔬菜'].includes(it.group))) return it.group;
+  const cat = stockCat(it), name = normFoodInput(it.name);
+  if (it.kind === '调料' || cat === 'spice') return '调料';
+  if (/(?:萝卜|芹|菜|菇|笋|豆角|豆腐|豆干|千张|腐竹|豆皮|魔芋|茄|椒|葱|蒜|姜|黄瓜|西红柿|番茄|土豆|红薯|山药|莲藕|冬瓜|南瓜|苦瓜|丝瓜|西葫芦)/.test(name)) return '蔬菜';
+  if (/(?:米饭|大米|糙米|黑米|意面|挂面|面条|拉面|乌冬|燕麦|麦片|面包|吐司|馒头|花卷|包子|饺子|通心粉|粉丝|粉条|年糕|米粉|河粉)/.test(name)) return '主食';
+  if (/(?:矿泉水|纯净水|苏打水|气泡水|椰子水|绿茶|红茶|乌龙茶|茉莉花茶|茶饮|咖啡|拿铁|美式|可乐|雪碧|汽水|果汁|橙汁|椰汁|豆浆|杏仁露|饮料)/.test(name)) return '饮品';
+  if (!/萝卜/.test(name) && /(?:苹果|香蕉|橙子?|柑橘|沃柑|柚子|柠檬|牛油果|草莓|蓝莓|树莓|蔓越莓|樱桃|车厘子|水蜜桃|黄桃|油桃|蟠桃|^桃$|梨|葡萄|提子|西瓜|哈密瓜|木瓜|火龙果|猕猴桃|奇异果|芒果|菠萝|凤梨|榴莲|荔枝|龙眼|山竹|柿子|石榴|百香果)/.test(name)) return '水果';
+  if (!/鱼丸|肉丸/.test(name) && /(?:牛奶|酸奶|羊奶|奶粉|鸡蛋|鸭蛋|鹅蛋|鹌鹑蛋|卤蛋|蛋白|蛋黄|奶酪|芝士|黄油|稀奶油|淡奶油|炼乳)/.test(name)) return '蛋奶';
+  if (/(?:三文鱼|鳕鱼|鲈鱼|带鱼|鲫鱼|草鱼|巴沙鱼|金枪鱼|鳗鱼|鱼排|鱼柳|鱼片|虾|蟹|贝|蛤|生蚝|牡蛎|扇贝|青口|鱿鱼|章鱼|墨鱼|海参|鲍鱼|海鲜)/.test(name)) return '海鲜';
+  if (['冷冻加工','腌菜罐头'].includes(it.group)) return it.group;
+  return cat === 'meat' ? '肉禽' : '蔬菜';
+}
+function isMultiFoodStockInput(s){
+  const n = normFoodInput(s), stripped = n.replace(new RegExp(MACRO_RE.source, 'gi'), ' ').trim();
+  const ns = qtyTokens(stripped);
+  if (ns.length < 2) return false;
+  const foodKey = name => fnorm(uiName(normFoodInput(name))).toLowerCase();
+  const known = new Set([
+    ...DB.items, ...(EMBED.foodSeed || []), ...(EMBED.catalog || []), ...(EMBED.items || [])
+  ].map(it => foodKey(it.name || it.zh)).filter(Boolean));
+  // 直接查名称与现有简称，避免 foodMatch → foodList → 本函数的循环调用。
+  const isKnownFood = name => {
+    const key = foodKey(name);
+    if (!key) return false;
+    if (known.has(key)) return true;
+    const alias = foodAliasOf(key);
+    return Boolean(alias && [...known].some(k => !FOOD_ALIAS_EXCL.test(k) &&
+      !(alias.excl && alias.excl.test(k)) && alias.res.some(re => re.test(k))));
+  };
+  const tokens = [];
+  let pos = 0;
+  for (const q of ns) {
+    if (stripped.slice(pos, q.s).trim()) tokens.push({t:'T', s:pos, e:q.s});
+    tokens.push({t:'N', s:q.s, e:q.e});
+    pos = q.e;
+  }
+  if (stripped.slice(pos).trim()) tokens.push({t:'T', s:pos, e:stripped.length});
+  let pairs = 0;
+  for (let i = 0; i < tokens.length;) {
+    const a = tokens[i], b = tokens[i + 1];
+    const paired = b && a.t !== b.t;
+    const seg = stripped.slice(a.s, paired ? b.e : a.e);
+    const qs = qtyTokens(seg);
+    // 只统计实际配成的数量与名称；零数量也参与判断，不按克重筛选。
+    if (paired && qs.length === 1 && isKnownFood(seg.slice(0, qs[0].s) + ' ' + seg.slice(qs[0].e))) pairs++;
+    i += paired ? 2 : 1;
+  }
+  return pairs >= 2;
+}
+function rejectMultiFoodStock(name){
+  if (!isMultiFoodStockInput(name)) return false;
+  toast('这是多食物饮食记录，请去「今天」页识别');
+  return true;
+}
 function isSoon(it){ return it.qty > 0 && ['soon','past','bad'].includes(life(it).k); }
 function stockMatch(it, f){
   return f === 'all' ? true : f === 'soon' ? isSoon(it) : f === 'out' ? it.qty <= 0 : stockCat(it) === f;
@@ -3098,14 +3190,26 @@ function setQty(id, q){
   return prev;
 }
 function addItem(name, catParam, nut){
-  const nm = String(name || '').trim(); if (!nm) return null;
-  const cat = (catParam && CAT_SET[catParam]) ? catParam : (CAT_SET[UI.stockFilter] ? UI.stockFilter : 'veg');
+  const nm = normFoodInput(name).trim(); if (!nm || rejectMultiFoodStock(nm)) return null;
   const src = foodMatch(nm, 100);
+  let cat = (catParam && CAT_SET[catParam]) ? catParam : null;
+  if (!cat) {
+    if (src && (src.group || src.kind)) cat = stockCat(src);
+    else if (/^(?:生抽|老抽|蚝油|料酒|花雕|陈醋|香醋|米醋|白醋|食盐|海盐|白糖|冰糖|红糖|蜂蜜|食用油|香油|麻油|橄榄油|花生油|菜籽油|玉米油|葵花籽油|黑胡椒|白胡椒|花椒|麻椒|孜然|咖喱|十三香|五香粉|桂皮|八角|香叶|肉桂|肉豆蔻|芥末|火锅底料|豆瓣酱|黄豆酱|甜面酱|番茄酱|沙拉酱|蛋黄酱|辣椒酱)$/.test(nm)) cat = 'spice';
+    else {
+      const group = stockGroupTitle({id:'u', name:nm, kind:'食材', group:'肉禽'});
+      if (group !== '肉禽') cat = MEAT_GROUPS.includes(group) ? 'meat' : 'veg';
+      else if (/肉|鸡|鸭|鹅|牛|羊|猪|排骨|培根|火腿|香肠|鱼/.test(nm)) cat = 'meat';
+    }
+    if (!cat) cat = CAT_SET[UI.stockFilter] ? UI.stockFilter : 'veg';
+  }
   const it = Object.assign({
     id: newId('u'), name: nm, orig: '', zone: '常温', style: '', taste: '', sprite: '', c1: '', c2: '',
     rule: cat === 'spice' ? 'blend' : 'rootveg', qty: 1, unit: '', opened: false, low: false,
     intake: dayKey(new Date()), tags: []
   }, CAT_SET[cat]);
+  if (src && STOCK_GROUP_ORDER.includes(src.group)) it.group = src.group;
+  it.group = stockGroupTitle(it);
   it.nut = Object.assign({}, nut || (src && src.nut) || getNut(nm));
   DB.items.push(it); stockChanged();
   return it;
@@ -3114,8 +3218,10 @@ function submitNewStock(){
   const inp = document.getElementById('stock-new-name');
   const name = inp ? inp.value.trim() : '';
   if (!name) return;
+  if (rejectMultiFoodStock(name)) return null;
   const macros = readMacros('stock-new', true); if (macros === null) return;
   const it = addItem(name, UI.addCat || 'veg', macros ? {...macros,fb:0} : undefined);
+  if (!it) return null;
   delete UI.drafts['stock-new'];
   UI.addOpen = false; UI.stockNewName = '';
   if (inp) inp.value = '';
@@ -3719,6 +3825,7 @@ function renderToday() {
 })();
 
 function renderStock() {
+  if (!UI.stockFilter || UI.stockFilter === 'all') UI.stockFilter = 'meat';
   const stockListEl = document.getElementById('stock-list');
   // 2.0 & 4.8：当焦点在 #stock-list 内的行内输入框时，整个跳过
   if (stockListEl && document.activeElement && document.activeElement.tagName === 'INPUT' && stockListEl.contains(document.activeElement)) {
@@ -3772,7 +3879,6 @@ function renderStock() {
 
   const items = (DB && Array.isArray(DB.items)) ? DB.items : [];
   const counts = {
-    all: items.length,
     meat: items.filter(it => stockCat(it) === 'meat').length,
     veg: items.filter(it => stockCat(it) === 'veg').length,
     spice: items.filter(it => it.kind === '调料' || stockCat(it) === 'spice').length,
@@ -3781,7 +3887,6 @@ function renderStock() {
   };
 
   const filterDefs = [
-    ['all', '全部'],
     ['meat', '肉蛋奶'],
     ['veg', '菜果主食'],
     ['spice', '调料'],
@@ -3789,7 +3894,7 @@ function renderStock() {
     ['out', '缺货']
   ];
 
-  const curFilter = UI.stockFilter || 'all';
+  const curFilter = UI.stockFilter;
   const filtersEl = document.getElementById('stock-filters');
   if (filtersEl) {
     filtersEl.innerHTML = filterDefs.map(([k, label]) =>
@@ -3880,14 +3985,8 @@ function renderStock() {
   const rowList = qRaw
     ? (typeof stockSearch === 'function' ? stockSearch(qRaw) : items)
     : items.filter(it => typeof stockMatch === 'function' ? stockMatch(it, curFilter) : true);
-  const inItems = rowList.filter(it => (Number(it.qty) || 0) > 0).slice().sort((a, b) =>
-    (Number(isSoon(b)) - Number(isSoon(a))) ||
-    (Number(stockCat(a) === 'spice') - Number(stockCat(b) === 'spice'))
-  );
-  const outItems = rowList.filter(it => (Number(it.qty) || 0) <= 0);
-
   const exactExists = qRaw ? items.some(it => uiName(it.name) === qRaw) : true;
-  const addRowHtml = (qRaw && !exactExists)
+  const addRowHtml = (qRaw && !exactExists && !isMultiFoodStockInput(qRaw))
     ? `<button class="add-row" data-act="s-add">+ 加「${esc(qRaw)}」</button>`
     : '';
 
@@ -3930,23 +4029,21 @@ function renderStock() {
     return mainRow + editRow;
   };
 
-  const inHtml = inItems.map(renderItemRow).join('');
-  const outHtml = outItems.map(renderItemRow).join('');
-  const dividerHtml = (inItems.length > 0 && outItems.length > 0)
-    ? `<div class="stock-divider">缺货</div>`
-    : '';
-
-  if (!addRowHtml && !inItems.length && !outItems.length) {
-    stockListEl.innerHTML = `<div class="glass-card stock-list-card"><div class="empty">没有匹配的食材</div></div>`;
-  } else {
-    stockListEl.innerHTML =
-      `<div class="glass-card stock-list-card">` +
-        addRowHtml +
-        inHtml +
-        dividerHtml +
-        outHtml +
-      `</div>`;
-  }
+  const groups = new Map(STOCK_GROUP_ORDER.map(title => [title, []]));
+  rowList.forEach(it => groups.get(stockGroupTitle(it)).push(it));
+  const groupsHtml = STOCK_GROUP_ORDER.map(title => {
+    const group = groups.get(title);
+    if (!group.length) return '';
+    const inItems = group.filter(it => (Number(it.qty) || 0) > 0)
+      .sort((a, b) => Number(isSoon(b)) - Number(isSoon(a)));
+    const outItems = group.filter(it => (Number(it.qty) || 0) <= 0);
+    const dividerHtml = inItems.length && outItems.length ? `<div class="stock-divider">缺货</div>` : '';
+    return `<div class="glass-card stock-list-card stock-group-card">` +
+      `<div class="stock-group-head"><span class="stock-group-title">${esc(title)}</span><span class="stock-group-count">有 ${inItems.length} / 共 ${group.length}</span></div>` +
+      inItems.map(renderItemRow).join('') + dividerHtml + outItems.map(renderItemRow).join('') + `</div>`;
+  }).join('');
+  stockListEl.innerHTML = (addRowHtml ? `<div class="glass-card stock-list-card">${addRowHtml}</div>` : '') +
+    (groupsHtml || (addRowHtml ? '' : `<div class="glass-card stock-list-card"><div class="empty">没有匹配的食材</div></div>`));
 }
 
 function renderCook() {
@@ -4762,8 +4859,10 @@ function bindEvents() {
         break;
       case 's-add': {
         const q = (UI.stockQuery || '').trim();
+        if (rejectMultiFoodStock(q)) return null;
         if (q && typeof addItem === 'function') {
           const it = addItem(q);
+          if (!it) return null;
           UI.stockQuery = '';
           const searchEl = document.getElementById('stock-search');
           if (searchEl) searchEl.value = '';
@@ -4862,9 +4961,11 @@ function bindEvents() {
     stockSearch.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const q = (UI.stockQuery || '').trim();
+        if (rejectMultiFoodStock(q)) { e.preventDefault(); return null; }
         if (q && !DB.items.some(i => uiName(i.name) === q)) {
           e.preventDefault();
           const it = (typeof addItem === 'function') ? addItem(q) : null;
+          if (!it) return null;
           UI.stockQuery = '';
           stockSearch.value = '';
           renderAll();
