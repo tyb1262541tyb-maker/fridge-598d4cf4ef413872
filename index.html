@@ -2387,7 +2387,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 function jobj(k){try{const v=JSON.parse(localStorage.getItem(k)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return{}}}
 function lsTry(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}
 function lsSet(k,v){if(lsTry(k,v))return true;
- if(k!==KEY)return false;
+ if(k!==KEY&&k!==FKEY)return false;
  const B=Object.keys(localStorage).filter(x=>x.startsWith(KEY+'-backup-')).sort();
  while(B.length>1){try{localStorage.removeItem(B.shift())}catch(e){}if(lsTry(k,v))return true}
  return false}
