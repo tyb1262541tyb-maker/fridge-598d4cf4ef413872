@@ -2387,8 +2387,9 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 function jobj(k){try{const v=JSON.parse(localStorage.getItem(k)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return{}}}
 function lsTry(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}
 function lsSet(k,v){if(lsTry(k,v))return true;
+ if(k!==KEY)return false;
  const B=Object.keys(localStorage).filter(x=>x.startsWith(KEY+'-backup-')).sort();
- while(B.length){try{localStorage.removeItem(B.shift())}catch(e){}if(lsTry(k,v))return true}
+ while(B.length>1){try{localStorage.removeItem(B.shift())}catch(e){}if(lsTry(k,v))return true}
  return false}
 function keepRaw(prefix,raw,keep){const ks=()=>Object.keys(localStorage).filter(x=>x.startsWith(prefix)).sort();
  try{const L=ks();while(L.length>=keep)localStorage.removeItem(L.shift())}catch(e){}
@@ -2396,6 +2397,9 @@ function keepRaw(prefix,raw,keep){const ks=()=>Object.keys(localStorage).filter(
  for(let i=0;i<6;i++){try{localStorage.setItem(k,raw);return k}catch(e){const B=Object.keys(localStorage).filter(x=>x.startsWith(KEY+'-backup-')).sort();if(!B.length)break;localStorage.removeItem(B[0])}}
  return null}
 function bkSave(k,raw){return!!keepRaw(k+'-',raw,3)}
+function nextU(prev,now){return Math.max(now,Number(prev&&prev.u)||0)+(prev?1:0)}
+function cmpVer(a,b){const x=String(a||'').match(/\d+/g)||[],y=String(b||'').match(/\d+/g)||[];
+ for(let i=0;i<Math.max(x.length,y.length);i++){const d=(Number(x[i])||0)-(Number(y[i])||0);if(d)return d<0?-1:1}return 0}
 function dbValid(s){return!!s&&typeof s==='object'&&!Array.isArray(s)&&s.version!=null&&s.version!==''&&Array.isArray(s.items)&&s.items.every(i=>i&&typeof i==='object'&&typeof i.id==='string'&&typeof i.name==='string')}
 
 let DB, RDONE={};
@@ -2403,8 +2407,9 @@ try{RDONE=jobj('shenchu-rdone')}catch(e){RDONE={}}
 (function load(){const raw=localStorage.getItem(KEY);let s=null,bad=false,hold=false;
  if(raw!==null){try{s=JSON.parse(raw)}catch(e){bad=true}if(!bad&&!dbValid(s))bad=true}
  if(bad){s=null;keepRaw(KEY+'-corrupt-',raw,2)}
- const upgrading=!s||!s.version||s.version<EMBED.version;
- if(s&&s.version&&s.version>=EMBED.version){DB=s}else{
+ const vc=s&&s.version?cmpVer(s.version,EMBED.version):-1;
+ const upgrading=vc<0;
+ if(vc>=0){DB=s}else{
   if(s)bkSave(KEY+'-backup-'+(s.version||'old'),raw);
   DB=JSON.parse(JSON.stringify(EMBED));
   if(s)DB={...DB,...s,version:EMBED.version,updated:EMBED.updated}}
@@ -2483,6 +2488,8 @@ function foodList(){const L=[];const names=new Set();
 const SYNC_REPO_DEFAULT='tyb1262541tyb-maker/1b-life-data-cf88ce',SKEY='shenchu-sync',STKEY='shenchu-sync-st';
 const SY={cfg:jobj(SKEY),st:jobj(STKEY),state:'off',busy:false,timer:null,msg:'',rev:0,retry:0};
 SY.st.recs=SY.st.recs||{};
+function sySaveSt(){const ok=lsSet(STKEY,JSON.stringify(SY.st));if(ok){SY.stWarned=0;return true}
+ if(!SY.stWarned){SY.stWarned=1;if(typeof toast==='function')toast('同步状态写入失败，下次保存/同步再试')}return false}
 const syRepo=()=>SY.cfg.repo||SYNC_REPO_DEFAULT,syPath=()=>SY.cfg.path||'data.json',syDev=()=>SY.cfg.dev||(/iPhone|iPad|Android|Mobile/i.test(navigator.userAgent)?'手机':'电脑'),syOn=()=>!!SY.cfg.token;
 function syHash(o){const s=JSON.stringify(o);let h=5381;for(let i=0;i<s.length;i++)h=(h*33+s.charCodeAt(i))|0;return(h>>>0).toString(36)+s.length}
 function syRecords(){const R={};
@@ -2498,9 +2505,9 @@ function syRecords(){const R={};
  Object.keys(FIT.extra||{}).forEach(k=>{if(!(k in R))R[k]=FIT.extra[k]});
  return R}
 function syStamp(){const R=syRecords(),S=SY.st.recs,now=Date.now(),reseed=SY.st.dbv&&SY.st.dbv!==DB.version;let ch=0;
- for(const k in R){const h=syHash(R[k]),s=S[k];if(!s||s.h!==h||s.del){let u=reseed&&s?1:Math.max(now,(s&&Number(s.u)||0)+1);if(s&&s.del&&s.ph&&s.ph===h&&s.pu!=null)u=s.pu;S[k]={h,u};ch++}}
- for(const k in S)if(!(k in R)&&!S[k].del){if(reseed&&k.startsWith('i:')){delete S[k];continue}S[k]={h:'del',u:Math.max(now,(Number(S[k].u)||0)+1),del:1,ph:S[k].h,pu:S[k].u};ch++}
- SY.st.dbv=DB.version;lsSet(STKEY,JSON.stringify(SY.st));return{R,ch}}
+ for(const k in R){const h=syHash(R[k]),s=S[k];if(!s||s.h!==h||s.del){let u=reseed&&s&&!s.del?1:nextU(s,now);S[k]={h,u};ch++}}
+ for(const k in S)if(!(k in R)&&!S[k].del){if(reseed&&k.startsWith('i:')){delete S[k];continue}S[k]={h:'del',u:nextU(S[k],now),del:1,ph:S[k].h,pu:S[k].u};ch++}
+ SY.st.dbv=DB.version;sySaveSt();return{R,ch}}
 function syLocalDoc(){const{R}=syStamp(),recs={};for(const k in SY.st.recs){const s=SY.st.recs[k];if(!s.del&&R[k]===undefined)continue;recs[k]=s.del?{u:s.u,del:1}:{u:s.u,d:R[k]}}return{v:1,app:'1b的奇妙人生',recs}}
 function syMerge(a,b){const o={v:1,app:'1b的奇妙人生',updated:new Date().toISOString(),recs:{}},A=(a&&a.recs)||{},B=(b&&b.recs)||{};
  new Set([...Object.keys(A),...Object.keys(B)]).forEach(k=>{const x=A[k],y=B[k];o.recs[k]=!x?y:!y?x:(y.u>x.u?y:(x.u>y.u?x:(y.del?y:x)))});o.devs=Object.assign({},(a&&a.devs)||{});return o}
@@ -2528,7 +2535,7 @@ function syApply(doc){if(!doc||!doc.recs)return;const recs=doc.recs,S={};const _
  Object.values(FIT.log).forEach(L=>L.sort((a,b)=>a.id<b.id?-1:1));
  for(const k in recs)S[k]=recs[k].del?{h:'del',u:recs[k].u,del:1}:{h:syHash(k.startsWith('e:')?recs[k].d:syRecords()[k]??recs[k].d),u:recs[k].u};
  _sv();_fs();SY.st.recs=S;syStamp();
- const R=syRecords();for(const k in R)if(SY.st.recs[k]&&!SY.st.recs[k].del)SY.st.recs[k].h=syHash(R[k]);lsSet(STKEY,JSON.stringify(SY.st));
+ const R=syRecords();for(const k in R)if(SY.st.recs[k]&&!SY.st.recs[k].del)SY.st.recs[k].h=syHash(R[k]);sySaveSt();
  if(typeof window.renderAll==='function')window.renderAll()}
 const b64e=s=>btoa(unescape(encodeURIComponent(s))),b64d=s=>decodeURIComponent(escape(atob(s.replace(/\n/g,''))));
 async function syGet(){const r=await fetch(`https://api.github.com/repos/${syRepo()}/contents/${syPath()}?t=${Date.now()}`,{cache:'no-store',headers:{Authorization:'Bearer '+SY.cfg.token,Accept:'application/vnd.github+json'}});
@@ -2549,7 +2556,7 @@ async function syRun(){if(!syOn()){sySet('off');return}if(SY.busy){SY.again=1;re
    if(doc&&!SY.st.synced&&!SY.cfg.last){for(const k in local.recs){if(doc.recs&&doc.recs[k]&&!local.recs[k].del&&syIsDefault(k,local.recs[k].d))local.recs[k].u=Math.min(local.recs[k].u,1)}}
    const m=syMerge(doc,local);pulled=Object.keys(m.recs).filter(k=>!local.recs[k]||m.recs[k].u!==local.recs[k].u||JSON.stringify(m.recs[k].d)!==JSON.stringify(local.recs[k].d)).length;
    SY.others=Object.entries(m.devs||{}).filter(([id])=>id!==SY.cfg.id).map(([,v])=>v);
-   const same=doc&&JSON.stringify(doc.recs)===JSON.stringify(m.recs);syApply(m);SY.st.synced=1;lsSet(STKEY,JSON.stringify(SY.st));
+   const same=doc&&JSON.stringify(doc.recs)===JSON.stringify(m.recs);syApply(m);SY.st.synced=1;sySaveSt();
    const me=m.devs[SY.cfg.id]||{};if(!same||!me.t||Date.now()-Date.parse(me.t)>36e5){m.devs[SY.cfg.id]={n:syDev(),t:new Date().toISOString(),v:DB.version}}else if(same){localStorage.removeItem(SKEY+'-dirty');okd=1;break}
    if(same){localStorage.removeItem(SKEY+'-dirty');okd=1;break}
    // PUT 等待期间的修改属于下一轮，不能被这次成功清掉待同步标记。
@@ -3257,8 +3264,8 @@ function deleteItem(id){
   const [it] = DB.items.splice(idx, 1);
   if(typeof SY!=='undefined'&&SY.st&&SY.st.recs){
     const prev=SY.st.recs['i:'+id];
-    SY.st.recs['i:'+id]={h:'del',u:Math.max(Date.now(),Number(prev&&prev.u)||0)+(prev?1:0),del:1};
-    lsSet(STKEY,JSON.stringify(SY.st));
+    SY.st.recs['i:'+id]={h:'del',u:nextU(prev,Date.now()),del:1};
+    sySaveSt();
   }
   stockChanged();
   return {it, idx};
@@ -4838,8 +4845,8 @@ function bindEvents() {
               DB.items.splice(Math.min(idx, DB.items.length), 0, snap);
               if(typeof SY!=='undefined'&&SY.st&&SY.st.recs){
                 const prev=SY.st.recs['i:'+snap.id];
-                SY.st.recs['i:'+snap.id]={h:syHash(snap),u:Math.max(Date.now(),Number(prev&&prev.u)||0)+(prev?1:0)};
-                lsSet(STKEY,JSON.stringify(SY.st));
+                SY.st.recs['i:'+snap.id]={h:syHash(snap),u:nextU(prev,Date.now())};
+                sySaveSt();
               }
               if (typeof stockChanged === 'function') stockChanged();
               else bump();
