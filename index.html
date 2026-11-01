@@ -2481,8 +2481,7 @@ function yieldOf(f){const g=grainOf(f);if(g)return g;if(f.proc)return null;if(f.
  for(const[re,y,t]of YIELD)if(re.test(f.name))return y?{y,t}:null;return null}
 
 function foodList(){const L=[];const names=new Set();
- // 多食物记录只从饮食识别候选中排除，保留用户库存原数据。
- DB.items.filter(i=>i.kind!=='调料'&&!isMultiFoodStockInput(i.name)).forEach(i=>{names.add(fnorm(i.name));L.push({key:'i:'+i.id,id:i.id,src:'item',name:i.name,ru:i.orig&&i.orig!==i.name?i.orig:'',have:i.qty>0,nut:i.nut && i.nut.kcal !== undefined ? i.nut : getNut(i.name,false),group:i.group,cooked:i.cooked,proc:i.proc})});
+ DB.items.filter(i=>i.kind!=='调料').forEach(i=>{names.add(fnorm(i.name));L.push({key:'i:'+i.id,id:i.id,src:'item',name:i.name,ru:i.orig&&i.orig!==i.name?i.orig:'',have:i.qty>0,nut:i.nut && i.nut.kcal !== undefined ? i.nut : getNut(i.name,false),group:i.group,cooked:i.cooked,proc:i.proc})});
  (EMBED.foodSeed||[]).forEach(f=>{if((FIT.hideSeed||[]).includes(f.id))return;if(f.alias&&DB.items.some(i=>i.name===f.alias&&i.kind!=='调料'))return;if(names.has(fnorm(f.name)))return;
   L.push({key:'s:'+f.id,id:f.id,src:'seed',name:f.name,ru:'',have:false,nut:f.nut,cooked:f.cooked,proc:f.proc,group:''})});
  (EMBED.catalog||[]).forEach((c,idx)=>{const nm=c.zh||c.name||'';if(!nm||names.has(fnorm(nm)))return;names.add(fnorm(nm));
@@ -2520,6 +2519,9 @@ function syMerge(a,b){const o={v:1,app:'1b的奇妙人生',updated:new Date().to
 function sySettings(d){const o=Object.assign({},d&&typeof d==='object'?d:{});for(const k of['target','prot','fat','carb','fiber','tgtV'])if(k in o&&!(typeof o[k]==='number'&&isFinite(o[k])))delete o[k];
  if(o.cookMode!=='raw'&&o.cookMode!=='cooked')delete o.cookMode;if(!Array.isArray(o.hideSeed))delete o.hideSeed;return o}
 function syApply(doc){if(!doc||!doc.recs)return;const recs=doc.recs,S={};const _sv=save.__orig||save,_fs=fsave.__orig||fsave;
+ // 任一步写入失败都要把三者一起退回，否则重试时内存里的云端旧值会被当成本机新改动推回云端。
+ const snap=JSON.stringify({DB,FIT,st:SY.st});
+ try{
  const order=DB.items.map(i=>i.id),items=[];
  Object.keys(recs).filter(k=>k.startsWith('i:')&&!recs[k].del&&recs[k].d).sort((a,b)=>{const ia=order.indexOf(a.slice(2)),ib=order.indexOf(b.slice(2));return(ia<0?1e9:ia)-(ib<0?1e9:ib)}).forEach(k=>items.push(recs[k].d));
  if(Object.keys(recs).some(k=>k.startsWith('i:')))DB.items=items;
@@ -2542,6 +2544,7 @@ function syApply(doc){if(!doc||!doc.recs)return;const recs=doc.recs,S={};const _
  for(const k in recs)S[k]=recs[k].del?{h:'del',u:recs[k].u,del:1}:{h:syHash(k.startsWith('e:')?recs[k].d:syRecords()[k]??recs[k].d),u:recs[k].u};
  _sv();_fs();SY.st.recs=S;syStamp();
  const R=syRecords();for(const k in R)if(SY.st.recs[k]&&!SY.st.recs[k].del)SY.st.recs[k].h=syHash(R[k]);if(!sySaveSt())throw new StorageError('保存失败：同步状态无法写入，请腾出本机空间后重试');
+ }catch(e){const o=JSON.parse(snap);DB=o.DB;FIT=o.FIT;SY.st=o.st;FOODS=null;throw e}
  if(typeof window.renderAll==='function')window.renderAll()}
 const b64e=s=>btoa(unescape(encodeURIComponent(s))),b64d=s=>decodeURIComponent(escape(atob(s.replace(/\n/g,''))));
 async function syGet(){const r=await fetch(`https://api.github.com/repos/${syRepo()}/contents/${syPath()}?t=${Date.now()}`,{cache:'no-store',headers:{Authorization:'Bearer '+SY.cfg.token,Accept:'application/vnd.github+json'}});
@@ -2937,7 +2940,8 @@ function foodMatch(q, min = 30){
     if (!fn) continue;
     let s = 0, viaAlias = false;
     if (fn === n) s = 100;
-    else if (fn.startsWith(n)) s = 70;
+    // 反向前缀只放行切法/做法后缀：鸡胸肉片→鸡胸肉；鸡蛋白、土豆泥、番茄炒蛋仍不算原食材。
+    else if (fn.startsWith(n) || (fn.length >= 2 && n.startsWith(fn) && /^(?:片|丁|块|丝|水煮|煮|蒸|热)$/.test(n.slice(fn.length)))) s = 70;
     else if (n.length >= 2 && fn.includes(n)) s = 50;
     else if (n.length >= 2 && f.hay.includes(n)) s = 30;
     if (al && !FOOD_ALIAS_EXCL.test(fn) && !(al.excl && al.excl.test(fn))) {
@@ -3158,8 +3162,18 @@ function stockGroupTitle(it){
   if (['冷冻加工','腌菜罐头'].includes(it.group)) return it.group;
   return cat === 'meat' ? '肉禽' : '蔬菜';
 }
+// 商品名里的规格数字不算第二个食物的数量：0蔗糖、1:1:1、2x250g、3.6g蛋白、3.2纯牛奶、2盒200g。
+const SPEC_NUM_RE = new RegExp([
+  // 0 紧跟在名称后才算规格；开头的「0鸡蛋35佛手瓜」仍是零数量连写。
+  '(?<=[\\u4e00-\\u9fa5A-Za-z])0(?:\\.0+)?(?=\\s*[\\u4e00-\\u9fa5])',
+  '\\d+(?:\\s*[:：]\\s*\\d+)+',
+  '\\d+\\s*[x×*](?=\\s*\\d)',
+  '\\d+(?:\\.\\d+)?\\s*(?:g|克)?(?=\\s*(?:蛋白(?!粉)|脂肪|碳水|膳食纤维|钙))',
+  '\\d+\\.\\d+(?!\\s*(?:' + QTY_UNIT + '))(?=\\s*[\\u4e00-\\u9fa5A-Za-z])',
+  '\\d+\\s*(?:盒|罐|瓶|袋|片|支|听|杯)(?=\\s*\\d+(?:\\.\\d+)?\\s*(?:kg|g|ml|l|千克|公斤|克|毫升|升)\\s*$)'
+].join('|'), 'gi');
 function isMultiFoodStockInput(s){
-  const n = normFoodInput(s), stripped = n.replace(new RegExp(MACRO_RE.source, 'gi'), ' ').trim();
+  const n = normFoodInput(s), stripped = n.replace(new RegExp(MACRO_RE.source, 'gi'), ' ').trim().replace(SPEC_NUM_RE, m => '_'.repeat(m.length));
   const ns = qtyTokens(stripped);
   if (ns.length < 2) return false;
   const tokens = [];
