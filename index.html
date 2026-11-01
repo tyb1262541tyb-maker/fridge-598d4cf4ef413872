@@ -2846,23 +2846,30 @@ function submitCustomFood(){
   if (gInput.validity.badInput || !Number.isFinite(grams) || grams <= 0) { toast('克数请填大于 0 的数字'); return; }
   const macros = readMacros('cf'); if (!macros) return;
   const day = refreshDay();
-  let item = null, previous = null, written = null;
+  const marker = name.match(/^(熟|生)(?!菜|抽|姜|粉|蚝|鱼)(.+)$/);
+  const mode = marker ? (marker[1] === '熟' ? 'cooked' : 'raw') : FIT.cookMode;
+  let item = null, previous = null, written = null, records = [];
   if (UI.customSaveDb) {
     item = DB.items.find(i => i.kind !== '调料' && i.name.trim().toLowerCase() === name.toLowerCase());
     previous = item ? JSON.parse(JSON.stringify(item)) : null;
     if (!item) item = addItem(name, 'veg');
     if (!item) return;
     const nut = {kcal:r0(macros.kcal * 100 / grams),p:r1(macros.p * 100 / grams),f:r1(macros.f * 100 / grams),c:r1(macros.c * 100 / grams),fb:r1(macros.fb * 100 / grams)};
-    saveItemNutrition(item, nut); written = JSON.stringify(item);
+    records = saveItemNutrition(item, nut, mode === 'cooked'); written = JSON.stringify(item);
   }
-  const ids = logEntries([{name,grams,...macros,src:item ? 'i:' + item.id : 'custom'}], UI.meal, day);
+  const ids = logEntries([{name,grams,mode,...macros,src:item ? 'i:' + item.id : 'custom'}], UI.meal, day);
   UI.customOpen = false; UI.customDraft = {name:'',g:100}; delete UI.drafts.cf; if (UI.autoCalories) delete UI.autoCalories.cf;
   renderAll();
   toast(`已记 ${name} · ${macros.kcal} kcal`, '撤销', () => {
     removeEntries(day, ids);
     if (item && JSON.stringify(itemById(item.id)) === written) {
-      if (previous) { Object.assign(item, previous); saveItemNutrition(item, item.nut); }
+      if (previous) { DB.items[DB.items.indexOf(itemById(item.id))] = previous; stockChanged(); }
       else deleteItem(item.id);
+      for (const {day, entry} of records) {
+        const list = dayLog(day), index = list.findIndex(e => e.id === entry.id);
+        if (index >= 0) list[index] = entry;
+      }
+      if (records.length) fsave();
     }
     renderAll();
   });
@@ -3011,7 +3018,7 @@ function chineseQty(s){
 }
 function maskNameNumbers(s){
   // 等长遮罩只用于找数量，切分及名称仍取原文；0卡也不能当营养速记。
-  return s.replace(/\d+\s*合\s*\d+/g, m => '_'.repeat(m.length)).replace(/\d+(?:[.,]\d+)?\s*[%％]|(?<![\d.])0(?:\.0+)?\s*[脂糖卡]/g, m => '·'.repeat(m.length));
+  return s.replace(/\d+\s*合\s*\d+|\d+(?:\s*\+\s*\d+)+|\d+(?:\.\d+)?\s*(?:°\s*C?|℃)/gi, m => '_'.repeat(m.length)).replace(/\d+(?:[.,]\d+)?\s*[%％]|(?<![\d.])0(?:\.0+)?\s*[脂糖卡]/g, m => '·'.repeat(m.length));
 }
 function qtyTokens(s){
   const re = new RegExp(QTY_RE, 'gi'), out = [], masked = maskNameNumbers(s);
@@ -3193,18 +3200,27 @@ function spiceGroup(it){ const hit = SPICE_GROUPS.find(([, re]) => re.test(it.na
 function spiceShort(name){ return SPICE_SHORT[name] || uiName(name).replace(/\s*·.*$/, '').replace(/[（(][^）)]*[)）]/g, '').trim(); }
 function itemById(id){ return DB.items.find(i => i.id === id) || null; }
 function stockChanged(){ FOODS = null; bump(); }
-function saveItemNutrition(item, nut){
-  item.nut = nut;
+function saveItemNutrition(item, nut, cooked = item.cooked){
+  if (item.nut && !!item.cooked === !!cooked && ['kcal','p','f','c','fb'].every(k => {
+    const round = k === 'kcal' ? r0 : r1;
+    return round(item.nut?.[k]) === round(nut[k]);
+  })) return [];
+  const previous = {nut:item.nut, cooked:item.cooked};
+  item.nut = nut; item.cooked = cooked;
   stockChanged();
   const f = {key:'i:' + item.id, name:item.name, nut, group:item.group, cooked:item.cooked, proc:item.proc};
-  let changed = false;
+  const records = [];
   for (const day in FIT.log) for (const e of dayLog(day)) {
-    if (e.src !== f.key || !(e.grams > 0)) continue;
+    // 旧记录未注明称重方式时保留原值，不能猜成生重。
+    if (e.src !== f.key || !(e.grams > 0) || !['raw','cooked'].includes(e.mode)) continue;
+    records.push({day, entry:JSON.parse(JSON.stringify(e))});
     const updated = foodToItem(f, e.grams, e.mode === 'cooked');
     delete updated._per;
-    Object.assign(e, updated); changed = true;
+    Object.assign(e, updated);
   }
-  if (changed) fsave();
+  try { if (records.length) fsave(); }
+  catch (e) { Object.assign(item, previous); stockChanged(); throw e; }
+  return records;
 }
 function setQty(id, q){
   const it = itemById(id); if (!it) return null;
