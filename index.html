@@ -4641,6 +4641,7 @@ function bindEvents() {
         break;
       }
       case 'body-day':
+        refreshDay();
         CUR_DAY = el.dataset.v;
         UI.preview = [];
         UI.editEntry = null;
@@ -4648,12 +4649,14 @@ function bindEvents() {
         document.querySelector('.body-card')?.scrollIntoView({block:'center', behavior:'smooth'});
         break;
       case 'day-prev':
+        refreshDay();
         CUR_DAY = _shiftDayStr(CUR_DAY, -1);
         UI.preview = [];
         UI.editEntry = null;
         renderToday();
         break;
       case 'day-next': {
+        refreshDay();
         const today = dayKey(new Date());
         if (CUR_DAY < today) {
           const next = _shiftDayStr(CUR_DAY, 1);
