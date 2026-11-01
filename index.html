@@ -2688,7 +2688,7 @@ function scaleEntry(e, newG){
   e.kcal = r0(e.kcal * k); e.p = r1(e.p * k); e.f = r1(e.f * k); e.c = r1(e.c * k); e.fb = r1((e.fb || 0) * k); e.grams = g;
   if (/\d+(\.\d+)?\s*(g|克|ml|毫升)$/i.test(e.name || '')) e.name = e.name.replace(/\d+(\.\d+)?(\s*(?:g|克|ml|毫升))$/i, g + '$2');
 }
-function logEntries(items, meal, day = CUR_DAY){
+function logEntries(items, meal, day = refreshDay()){
   const L = Array.isArray(FIT.log[day]) ? FIT.log[day] : (FIT.log[day] = []);
   const ids = [];
   items.forEach(it => {
@@ -2838,7 +2838,7 @@ function submitCustomFood(){
   if (!name) { toast('写个食物或外卖名'); return; }
   if (gInput.validity.badInput || !Number.isFinite(grams) || grams <= 0) { toast('克数请填大于 0 的数字'); return; }
   const macros = readMacros('cf'); if (!macros) return;
-  const day = CUR_DAY;
+  const day = refreshDay();
   let item = null, previous = null, written = null;
   if (UI.customSaveDb) {
     item = DB.items.find(i => i.kind !== '调料' && i.name.trim().toLowerCase() === name.toLowerCase());
@@ -3454,7 +3454,18 @@ function _prevWeightPlaceholder(dayStr) {
   if (!FIT || !FIT.wt) return '';
   const keys = Object.keys(FIT.wt).filter(k => k < dayStr && FIT.wt[k] && Number(FIT.wt[k].kg) > 0).sort();
   if (!keys.length) return '';
-  return String(FIT.wt[keys[keys.length - 1]].kg);
+  const lastDay = keys[keys.length - 1];
+  return `上次 ${FIT.wt[lastDay].kg}（${lastDay.slice(5)}）`;
+}
+
+function refreshDay() {
+  const nowDay = dk();
+  if (nowDay !== UI.todayKey) {
+    TODAY.setTime(new Date().setHours(0, 0, 0, 0));
+    if (CUR_DAY === UI.todayKey) CUR_DAY = nowDay;
+    UI.todayKey = nowDay;
+  }
+  return CUR_DAY;
 }
 
 function renderAll() {
@@ -3479,6 +3490,7 @@ function renderAll() {
 }
 
 function renderToday() {
+  refreshDay();
   const todayStr = dayKey(new Date());
   const isToday = CUR_DAY === todayStr;
 
@@ -3689,16 +3701,18 @@ function renderToday() {
   const bodyDate = document.getElementById('body-date');
   if (bodyDate) bodyDate.textContent = `${isToday ? '今天' : CUR_DAY} · 身体记录${isToday ? '' : '（补录）'}`;
   const wtInput = document.getElementById('wt-input');
-  if (wtInput && document.activeElement !== wtInput) {
+  if (wtInput && (wtInput.dataset.day !== CUR_DAY || document.activeElement !== wtInput)) {
     const wtObj = FIT.wt && FIT.wt[CUR_DAY];
     wtInput.value = wtObj && Number(wtObj.kg) > 0 ? String(wtObj.kg) : '';
     wtInput.placeholder = _prevWeightPlaceholder(CUR_DAY);
+    wtInput.dataset.day = CUR_DAY;
   }
   const actInput = document.getElementById('act-input');
-  if (actInput && document.activeElement !== actInput) {
+  if (actInput && (actInput.dataset.day !== CUR_DAY || document.activeElement !== actInput)) {
     const actObj = FIT.act && FIT.act[CUR_DAY];
     actInput.value = actObj && actObj.kcal != null && Number(actObj.kcal) >= 0 ? String(r0(actObj.kcal)) : '';
     actInput.placeholder = '未记录';
+    actInput.dataset.day = CUR_DAY;
   }
 
   // 2.3.6 趋势折叠卡 #trend-card
@@ -4250,7 +4264,7 @@ function commitPreview() {
   const items = UI.preview.slice();
   const count = items.length;
   const totalKcal = r0(items.reduce((s, x) => s + (Number(x.kcal) || 0), 0));
-  const day = CUR_DAY;
+  const day = refreshDay();
   const meal = UI.meal || (typeof curMeal === 'function' ? curMeal() : 'breakfast');
 
   const res = logEntries(items, meal);
@@ -4268,7 +4282,7 @@ function commitPreview() {
 }
 
 function logCombo(v) {
-  const day = CUR_DAY;
+  const day = refreshDay();
   if (v === 'bf') {
     const bfCombo = (FIT.combos && FIT.combos.find(c => c.fixed)) || BFC;
     const items = (bfCombo && Array.isArray(bfCombo.items)) ? bfCombo.items : [];
@@ -4337,15 +4351,31 @@ function logCombo(v) {
 }
 
 function saveBody() {
+  refreshDay();
   const wtEl = document.getElementById('wt-input');
   const actEl = document.getElementById('act-input');
+  if ([wtEl, actEl].some(el => el?.dataset?.day && el.dataset.day !== CUR_DAY)) {
+    renderToday();
+    toast('日期已切换，请重新填写当天身体数据');
+    return;
+  }
+  const rawWt = wtEl ? wtEl.value.trim().replace(',', '.') : '';
+  const rawAct = actEl ? actEl.value.trim() : '';
+  const decimal = /^(?:\d+(?:\.\d*)?|\.\d+)$/;
+  if (rawWt && (!decimal.test(rawWt) || Number(rawWt) < 30 || Number(rawWt) > 250)) {
+    toast('体重请填 30–250 kg 的完整数字');
+    return;
+  }
+  if (rawAct && (!decimal.test(rawAct) || Number(rawAct) < 0 || Number(rawAct) > 5000)) {
+    toast('活动热量请填 0–5000 kcal 的完整数字，不含逗号或单位');
+    return;
+  }
   if (!FIT.wt) FIT.wt = {};
   if (!FIT.act) FIT.act = {};
 
   let changed = false;
 
   if (wtEl) {
-    const rawWt = wtEl.value.trim().replace(',', '.');
     const curWt = FIT.wt[CUR_DAY] ? Number(FIT.wt[CUR_DAY].kg) : null;
     if (!rawWt) {
       if (FIT.wt[CUR_DAY]) {
@@ -4353,18 +4383,15 @@ function saveBody() {
         changed = true;
       }
     } else {
-      const val = Math.round(parseFloat(rawWt) * 10) / 10;
-      if (Number.isFinite(val) && val >= 30 && val <= 250) {
-        if (curWt !== val) {
-          FIT.wt[CUR_DAY] = { kg: val, at: Date.now() };
-          changed = true;
-        }
+      const val = Math.round(Number(rawWt) * 10) / 10;
+      if (curWt !== val) {
+        FIT.wt[CUR_DAY] = { kg: val, at: Date.now() };
+        changed = true;
       }
     }
   }
 
   if (actEl) {
-    const rawAct = actEl.value.trim();
     const curAct = FIT.act[CUR_DAY] ? Number(FIT.act[CUR_DAY].kcal) : null;
     if (!rawAct) {
       if (FIT.act[CUR_DAY]) {
@@ -4372,12 +4399,10 @@ function saveBody() {
         changed = true;
       }
     } else {
-      const parsed = parseFloat(rawAct), val = Math.round(parsed);
-      if (Number.isFinite(parsed) && parsed >= 0 && parsed <= 5000) {
-        if (curAct !== val) {
-          FIT.act[CUR_DAY] = { kcal: val, at: Date.now() };
-          changed = true;
-        }
+      const val = Math.round(Number(rawAct));
+      if (curAct !== val) {
+        FIT.act[CUR_DAY] = { kcal: val, at: Date.now() };
+        changed = true;
       }
     }
   }
@@ -4427,7 +4452,7 @@ function logRecipe(id) {
   const firstItem = st.firstItem || null;
   const title = typeof recipeTitle === 'function' ? recipeTitle(r) : r.name;
   const meal = UI.meal || (typeof curMeal === 'function' ? curMeal() : 'breakfast');
-  const day = CUR_DAY;
+  const day = refreshDay();
   const kcal = r0(r.nut.kcal || 0);
 
   const res = logEntries([{
@@ -5047,12 +5072,6 @@ function bindEvents() {
 
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      const nowDay = dayKey(new Date());
-      if (nowDay !== UI.todayKey) {
-        TODAY.setTime(new Date().setHours(0, 0, 0, 0));
-        if (CUR_DAY === UI.todayKey) CUR_DAY = nowDay;
-        UI.todayKey = nowDay;
-      }
       renderAll();
       if (typeof syOn === 'function' && syOn()) syRun();
     }
@@ -5096,6 +5115,13 @@ function importHealth() {
   }
   const a = num(q.get('active') ?? q.get('act') ?? q.get('burn'));
   const w = num(q.get('weight') ?? q.get('wt'));
+  const importKey = 'hk:' + JSON.stringify([d, a, w]);
+  if (FIT.extra[importKey]) {
+    history.replaceState(null, '', location.pathname + location.hash);
+    renderAll();
+    setTimeout(() => toast('健康链接已导入过，已跳过重复导入'), 300);
+    return true;
+  }
   const msg = [], now = Date.now();
   FIT.act = FIT.act || {};
   FIT.wt = FIT.wt || {};
@@ -5109,6 +5135,7 @@ function importHealth() {
     msg.push(`体重 ${kg} kg`);
   }
   if (msg.length) {
+    FIT.extra[importKey] = {at: now};
     if (storageAction(fsave)() === false) {
       renderAll();
       return true;
