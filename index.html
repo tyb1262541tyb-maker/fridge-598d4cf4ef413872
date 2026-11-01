@@ -729,6 +729,9 @@ svg{display:block}
   background: var(--red);
 }
 
+.progress-fill.is-near { background: var(--amber); }
+.text-near { color: #B45309; }
+
 .progress-fill.is-ok,
 .hero-bar-fill.is-ok,
 .hero-bar-fill.ok {
@@ -2474,12 +2477,12 @@ const YIELD=[[/肚/,0.6,'牛肚'],[/(鱼丸|籽包|蟹柳|香肠|火腿|鸡块|�
 const GYIELD=[[/方便|速冲|即食|拉面/,0],[/大米|米饭|白米|长粒|粳米|籼米/,2.4,'米饭'],[/意面|意大利面|Bavette|Tortiglioni|通心粉|pasta/i,2.2,'意面'],[/挂面|面条|乌冬|荞麦面/,2.3,'面条'],[/米粉|米线/,2.5,'米粉'],[/粉丝|宽粉|粉条/,3,'粉丝/宽粉'],[/燕麦/,3,'燕麦（煮粥）'],[/荞麦/,2.5,'荞麦']];
 function grainOf(f){if(f.proc)return null;if(!(f.group==='主食'||/米|饭|面|麦|粉丝|宽粉|米粉/.test(f.name)))return null;if(f.group&&f.group!=='主食'&&f.src!=='seed')return null;
  for(const[re,y,t]of GYIELD)if(re.test(f.name))return y?{y,t,grain:1,base:f.cooked?'cooked':'raw'}:null;return null}
-function yieldOf(f){const g=grainOf(f);if(g)return g;if(f.cooked||f.proc)return null;if(f.group&&!['肉禽','海鲜'].includes(f.group))return null;if(!f.group&&!/(鸡|牛|猪|羊|鱼|虾|海鲜|肉)/.test(f.name))return null;
+function yieldOf(f){const g=grainOf(f);if(g)return g;if(f.proc)return null;if(f.group&&!['肉禽','海鲜'].includes(f.group))return null;if(!f.group&&!/(鸡|牛|猪|羊|鱼|虾|海鲜|肉)/.test(f.name))return null;
  for(const[re,y,t]of YIELD)if(re.test(f.name))return y?{y,t}:null;return null}
 
 function foodList(){const L=[];const names=new Set();
  // 多食物记录只从饮食识别候选中排除，保留用户库存原数据。
- DB.items.filter(i=>i.kind!=='调料'&&!isMultiFoodStockInput(i.name)).forEach(i=>{names.add(fnorm(i.name));L.push({key:'i:'+i.id,id:i.id,src:'item',name:i.name,ru:i.orig&&i.orig!==i.name?i.orig:'',have:i.qty>0,nut:i.nut && i.nut.kcal !== undefined ? i.nut : getNut(i.name,false),group:i.group})});
+ DB.items.filter(i=>i.kind!=='调料'&&!isMultiFoodStockInput(i.name)).forEach(i=>{names.add(fnorm(i.name));L.push({key:'i:'+i.id,id:i.id,src:'item',name:i.name,ru:i.orig&&i.orig!==i.name?i.orig:'',have:i.qty>0,nut:i.nut && i.nut.kcal !== undefined ? i.nut : getNut(i.name,false),group:i.group,cooked:i.cooked,proc:i.proc})});
  (EMBED.foodSeed||[]).forEach(f=>{if((FIT.hideSeed||[]).includes(f.id))return;if(f.alias&&DB.items.some(i=>i.name===f.alias&&i.kind!=='调料'))return;if(names.has(fnorm(f.name)))return;
   L.push({key:'s:'+f.id,id:f.id,src:'seed',name:f.name,ru:'',have:false,nut:f.nut,cooked:f.cooked,proc:f.proc,group:''})});
  (EMBED.catalog||[]).forEach((c,idx)=>{const nm=c.zh||c.name||'';if(!nm||names.has(fnorm(nm)))return;names.add(fnorm(nm));
@@ -2678,8 +2681,8 @@ function recipeTitle(r){ return String(r.name).replace(/[（(][^）)]*[)）]/g, 
 function dayLog(key){ return Array.isArray(FIT.log[key]) ? FIT.log[key] : []; }
 function dayTotals(key){
   return dayLog(key).reduce((t, e) => {
-    t.kcal += Number(e.kcal) || 0; t.p += Number(e.p) || 0; t.f += Number(e.f) || 0; t.c += Number(e.c) || 0; return t;
-  }, {kcal:0, p:0, f:0, c:0});
+    t.kcal += Number(e.kcal) || 0; t.p += Number(e.p) || 0; t.f += Number(e.f) || 0; t.c += Number(e.c) || 0; t.fb += Number(e.fb) || 0; return t;
+  }, {kcal:0, p:0, f:0, c:0, fb:0});
 }
 function findEntry(id){ for (const d in FIT.log) { const e = dayLog(d).find(x => x.id === id); if (e) return {day: d, e}; } return null; }
 function scaleEntry(e, newG){
@@ -2724,7 +2727,7 @@ function frequentFoods(n = 2){
     .map(nm => ({label: nm.replace(/[\d.%％]+/g, '').trim() || nm, entry: last[nm]}));
 }
 
-const MACROS = [['kcal','热量','kcal'],['p','蛋白质 P','g'],['f','脂肪 F','g'],['c','碳水 C','g']];
+const MACROS = [['kcal','热量','kcal'],['p','蛋白质 P','g'],['f','脂肪 F','g'],['c','碳水 C','g'],['fb','膳食纤维','g']];
 const NUT_DB = {};
 function getNut(name, match = true){
   if (!name) return null;
@@ -2760,7 +2763,7 @@ function saveDB(){
 }
 window.saveDB = saveDB;
 function macroEditor(prefix, values = {}, caption = '', custom = false){
-  const draft = UI.drafts[prefix] || values;
+  const draft = UI.drafts[prefix] || values || {};
   return `<div class="macro-editor"><div class="macro-caption">${esc(caption)}</div>` +
     `<div class="${custom ? 'custom-macro-grid' : 'macro-grid'}">` + MACROS.map(([k,label,unit]) =>
       `<label class="macro-cell" for="${esc(prefix)}-${k}"><span class="macro-label">${label}</span>` +
@@ -2781,7 +2784,7 @@ function readMacros(prefix, optional = false){
     if (optional) return undefined;
     toast('填写热量，或填写蛋白质、脂肪、碳水自动计算'); return null;
   }
-  const out = {p:r1(raw.p),f:r1(raw.f),c:r1(raw.c)};
+  const out = {p:r1(raw.p),f:r1(raw.f),c:r1(raw.c),fb:r1(raw.fb)};
   out.kcal = raw.kcal === '' ? r0(out.p * 4 + out.f * 9 + out.c * 4) : r0(raw.kcal);
   return out;
 }
@@ -2822,6 +2825,10 @@ function renderCustomFood(){
         `<div class="macro-cell-head"><span class="macro-label">碳水 C</span></div>` +
         `<span class="macro-number"><input id="cf-c" class="macro-input" type="number" inputmode="decimal" min="0" step="0.1" data-macro="c" data-prefix="cf" value="${esc(draft.c ?? '')}" placeholder="0"><span class="macro-unit">g</span></span>` +
       `</label>` +
+      `<label class="macro-cell" for="cf-fb">` +
+        `<div class="macro-cell-head"><span class="macro-label">膳食纤维</span></div>` +
+        `<span class="macro-number"><input id="cf-fb" class="macro-input" type="number" inputmode="decimal" min="0" step="0.1" data-macro="fb" data-prefix="cf" value="${esc(draft.fb ?? '')}" placeholder="0"><span class="macro-unit">g</span></span>` +
+      `</label>` +
     `</div>` +
     `<div class="custom-row-foot">` +
       `<button type="button" class="custom-save-db ${UI.customSaveDb ? 'active is-active' : ''}" data-act="custom-save-db-toggle" aria-pressed="${UI.customSaveDb}">${UI.customSaveDb ? '☑ 存入食材库（按每100g折算复用）' : '☐ 仅记本餐'}</button>` +
@@ -2845,16 +2852,16 @@ function submitCustomFood(){
     previous = item ? JSON.parse(JSON.stringify(item)) : null;
     if (!item) item = addItem(name, 'veg');
     if (!item) return;
-    const nut = {kcal:r0(macros.kcal * 100 / grams),p:r1(macros.p * 100 / grams),f:r1(macros.f * 100 / grams),c:r1(macros.c * 100 / grams),fb:0};
-    item.nut = nut; stockChanged(); written = JSON.stringify(item);
+    const nut = {kcal:r0(macros.kcal * 100 / grams),p:r1(macros.p * 100 / grams),f:r1(macros.f * 100 / grams),c:r1(macros.c * 100 / grams),fb:r1(macros.fb * 100 / grams)};
+    saveItemNutrition(item, nut); written = JSON.stringify(item);
   }
-  const ids = logEntries([{name,grams,...macros,fb:0,src:item ? 'i:' + item.id : 'custom'}], UI.meal, day);
+  const ids = logEntries([{name,grams,...macros,src:item ? 'i:' + item.id : 'custom'}], UI.meal, day);
   UI.customOpen = false; UI.customDraft = {name:'',g:100}; delete UI.drafts.cf; if (UI.autoCalories) delete UI.autoCalories.cf;
   renderAll();
   toast(`已记 ${name} · ${macros.kcal} kcal`, '撤销', () => {
     removeEntries(day, ids);
     if (item && JSON.stringify(itemById(item.id)) === written) {
-      if (previous) { Object.assign(item, previous); stockChanged(); }
+      if (previous) { Object.assign(item, previous); saveItemNutrition(item, item.nut); }
       else deleteItem(item.id);
     }
     renderAll();
@@ -2923,7 +2930,7 @@ function foodMatch(q, min = 30){
     if (!fn) continue;
     let s = 0, viaAlias = false;
     if (fn === n) s = 100;
-    else if (fn.startsWith(n) || (n.startsWith(fn) && fn.length >= 2)) s = 70;
+    else if (fn.startsWith(n)) s = 70;
     else if (n.length >= 2 && fn.includes(n)) s = 50;
     else if (n.length >= 2 && f.hay.includes(n)) s = 30;
     if (al && !FOOD_ALIAS_EXCL.test(fn) && !(al.excl && al.excl.test(fn))) {
@@ -2951,7 +2958,7 @@ function mkPreview(name, g, per, src, mode){ const it = {name, grams: g, src, mo
 function foodToItem(f, g, cooked){
   const mode = cooked ? 'cooked' : 'raw';
   const yd = weightYield(f);
-  const base = cooked && !f.cooked ? g / (yd ? yd.y : 1) : g;
+  const base = yd && cooked !== !!f.cooked ? (cooked ? g / yd.y : g * yd.y) : g;
   const per = {};
   ['kcal','p','f','c','fb'].forEach(k => { per[k] = (Number(f.nut[k]) || 0) * base / g / 100; });
   const nm = uiName(f.name).replace(/^熟+/, '');
@@ -3105,7 +3112,7 @@ function parseLocal(text){
     const pre = q.name.match(/^(熟|生)(?!菜|抽|姜|粉|蚝|鱼)(.+)$/);
     const core = pre ? pre[2] : q.name;
     const grams = q.grams;
-    const cooked = seg.includes('熟') || FIT.cookMode === 'cooked';
+    const cooked = pre ? pre[1] === '熟' : FIT.cookMode === 'cooked';
     const f = grams ? (foodMatch(q.name, 30) || (pre ? foodMatch(core, 30) : null)) : null;
     const nut = grams && !f ? getNut(q.name) : null;
     if (f) {
@@ -3148,19 +3155,6 @@ function isMultiFoodStockInput(s){
   const n = normFoodInput(s), stripped = n.replace(new RegExp(MACRO_RE.source, 'gi'), ' ').trim();
   const ns = qtyTokens(stripped);
   if (ns.length < 2) return false;
-  const foodKey = name => fnorm(uiName(normFoodInput(name))).toLowerCase();
-  const known = new Set([
-    ...DB.items, ...(EMBED.foodSeed || []), ...(EMBED.catalog || []), ...(EMBED.items || [])
-  ].map(it => foodKey(it.name || it.zh)).filter(Boolean));
-  // 直接查名称与现有简称，避免 foodMatch → foodList → 本函数的循环调用。
-  const isKnownFood = name => {
-    const key = foodKey(name);
-    if (!key) return false;
-    if (known.has(key)) return true;
-    const alias = foodAliasOf(key);
-    return Boolean(alias && [...known].some(k => !FOOD_ALIAS_EXCL.test(k) &&
-      !(alias.excl && alias.excl.test(k)) && alias.res.some(re => re.test(k))));
-  };
   const tokens = [];
   let pos = 0;
   for (const q of ns) {
@@ -3176,7 +3170,7 @@ function isMultiFoodStockInput(s){
     const seg = stripped.slice(a.s, paired ? b.e : a.e);
     const qs = qtyTokens(seg);
     // 只统计实际配成的数量与名称；零数量也参与判断，不按克重筛选。
-    if (paired && qs.length === 1 && isKnownFood(seg.slice(0, qs[0].s) + ' ' + seg.slice(qs[0].e))) pairs++;
+    if (paired && qs.length === 1 && /[\u4e00-\u9fa5a-zA-Z]/.test(seg.slice(0, qs[0].s) + seg.slice(qs[0].e))) pairs++;
     i += paired ? 2 : 1;
   }
   return pairs >= 2;
@@ -3199,6 +3193,19 @@ function spiceGroup(it){ const hit = SPICE_GROUPS.find(([, re]) => re.test(it.na
 function spiceShort(name){ return SPICE_SHORT[name] || uiName(name).replace(/\s*·.*$/, '').replace(/[（(][^）)]*[)）]/g, '').trim(); }
 function itemById(id){ return DB.items.find(i => i.id === id) || null; }
 function stockChanged(){ FOODS = null; bump(); }
+function saveItemNutrition(item, nut){
+  item.nut = nut;
+  stockChanged();
+  const f = {key:'i:' + item.id, name:item.name, nut, group:item.group, cooked:item.cooked, proc:item.proc};
+  let changed = false;
+  for (const day in FIT.log) for (const e of dayLog(day)) {
+    if (e.src !== f.key || !(e.grams > 0)) continue;
+    const updated = foodToItem(f, e.grams, e.mode === 'cooked');
+    delete updated._per;
+    Object.assign(e, updated); changed = true;
+  }
+  if (changed) fsave();
+}
 function setQty(id, q){
   const it = itemById(id); if (!it) return null;
   const prev = {qty: it.qty, intake: it.intake, opened: it.opened};
@@ -3227,6 +3234,7 @@ function addItem(name, catParam, nut){
     intake: dayKey(new Date()), tags: []
   }, CAT_SET[cat]);
   if (src && STOCK_GROUP_ORDER.includes(src.group)) it.group = src.group;
+  if (src) { it.cooked = !!src.cooked; it.proc = !!src.proc; }
   it.group = stockGroupTitle(it);
   it.nut = Object.assign({}, nut || (src && src.nut) || getNut(nm));
   DB.items.push(it); stockChanged();
@@ -3238,7 +3246,7 @@ function submitNewStock(){
   if (!name) return;
   if (rejectMultiFoodStock(name)) return null;
   const macros = readMacros('stock-new', true); if (macros === null) return;
-  const it = addItem(name, UI.addCat || 'veg', macros ? {...macros,fb:0} : undefined);
+  const it = addItem(name, UI.addCat || 'veg', macros);
   if (!it) return null;
   delete UI.drafts['stock-new'];
   UI.addOpen = false; UI.stockNewName = '';
@@ -3489,6 +3497,12 @@ function renderAll() {
   if (typeof updateSyncUI === 'function') updateSyncUI();
 }
 
+function nutrientState(value, target){
+  if (value > target) return ['text-danger', 'is-over'];
+  if (value === target) return ['text-ok', 'is-ok'];
+  if (value >= target * 0.9) return ['text-near', 'is-near'];
+  return ['', ''];
+}
 function renderToday() {
   refreshDay();
   const todayStr = dayKey(new Date());
@@ -3518,43 +3532,42 @@ function renderToday() {
     const tgtProt = r0(FIT.prot || 140);
     const tgtFat = r0(FIT.fat || 55);
     const tgtCarb = r0(FIT.carb || 185);
+    const tgtFiber = r0(FIT.fiber || 25);
 
     const eatKcal = r0(T.kcal || 0);
     const eatP = r0(T.p || 0);
-    const eatF = r0(T.f || 0);
-    const eatC = r0(T.c || 0);
-
     const overK = (T.kcal || 0) > tgtKcal;
-    const kLabel = overK ? '已超标' : '还能吃';
+    const [kText, kBar] = nutrientState(T.kcal, tgtKcal);
+    const kLabel = overK ? '已超标' : T.kcal === tgtKcal ? '已达目标' : '还能吃';
     const kNum = overK ? r0((T.kcal || 0) - tgtKcal) : r0(tgtKcal - (T.kcal || 0));
     const kPct = tgtKcal > 0 ? Math.min(100, Math.max(0, r0(((T.kcal || 0) / tgtKcal) * 100))) : 0;
 
-    const okP = (T.p || 0) >= tgtProt;
-    const pLabel = okP ? '蛋白质' : '蛋白差';
-    const pNum = okP ? eatP : r0(tgtProt - (T.p || 0));
+    const overP = (T.p || 0) > tgtProt;
+    const [pText, pBar] = nutrientState(T.p, tgtProt);
+    const pLabel = overP ? '蛋白超标' : T.p === tgtProt ? '蛋白质' : '蛋白差';
+    const pNum = overP ? r1(T.p - tgtProt) : T.p === tgtProt ? eatP : r1(tgtProt - T.p);
     const pPct = tgtProt > 0 ? Math.min(100, Math.max(0, r0(((T.p || 0) / tgtProt) * 100))) : 0;
-
-    const fHtml = eatF > tgtFat ? `<span class="text-danger">${eatF}</span>` : `${eatF}`;
-    const cHtml = eatC > tgtCarb ? `<span class="text-danger">${eatC}</span>` : `${eatC}`;
 
     hero.innerHTML =
       `<div class="hero-grid">` +
         `<div class="hero-col">` +
           `<span class="hero-label">${kLabel}</span>` +
-          `<div class="hero-value"><span class="hero-num ${overK ? 'text-danger' : ''}">${kNum}</span><span class="hero-unit">kcal</span></div>` +
-          `<div class="progress"><div class="progress-fill ${overK ? 'is-over' : ''}" style="width:${kPct}%"></div></div>` +
-          `<span class="hero-foot">已吃 ${eatKcal} / ${tgtKcal}</span>` +
+          `<div class="hero-value"><span class="hero-num ${kText}">${kNum}</span><span class="hero-unit">kcal</span></div>` +
+          `<div class="progress"><div class="progress-fill ${kBar}" style="width:${kPct}%"></div></div>` +
+          `<span class="hero-foot">已吃 ${eatKcal} / ${tgtKcal}${kBar === 'is-near' ? ' · 接近目标' : ''}</span>` +
         `</div>` +
         `<div class="hero-col">` +
           `<span class="hero-label">${pLabel}</span>` +
-          `<div class="hero-value"><span class="hero-num ${okP ? 'text-ok' : ''}">${pNum}</span><span class="hero-unit">g</span></div>` +
-          `<div class="progress"><div class="progress-fill ${okP ? 'is-ok' : ''}" style="width:${pPct}%"></div></div>` +
-          `<span class="hero-foot">已吃 ${eatP} / ${tgtProt}g</span>` +
+          `<div class="hero-value"><span class="hero-num ${pText}">${pNum}</span><span class="hero-unit">g</span></div>` +
+          `<div class="progress"><div class="progress-fill ${pBar}" style="width:${pPct}%"></div></div>` +
+          `<span class="hero-foot">已吃 ${r1(T.p)} / ${tgtProt}g${pBar === 'is-near' ? ' · 接近目标' : ''}</span>` +
         `</div>` +
       `</div>` +
-      `<div class="hero-macros">` + [['f','脂肪',T.f,tgtFat],['c','碳水',T.c,tgtCarb]].map(([k,label,value,target]) =>
-        `<div class="hero-macro-item"><span class="hero-macro-label">${label} ${r1(value)} / ${target}g</span><div class="progress" role="progressbar" aria-label="${label}" aria-valuenow="${r1(value)}" aria-valuemin="0" aria-valuemax="${target}"><div class="progress-fill" data-progress="${k}" style="width:${Math.min(100, Math.max(0, value / target * 100))}%"></div></div></div>`
-      ).join('') + `</div>`;
+      `<div class="hero-macros">` + [['f','脂肪',T.f,tgtFat],['c','碳水',T.c,tgtCarb],['fb','膳食纤维',T.fb,tgtFiber]].map(([k,label,value,target]) => {
+        const [text, bar] = k === 'fb' ? (value >= target ? ['text-ok','is-ok'] : ['','']) : nutrientState(value, target);
+        const hint = k !== 'fb' && value > target ? ` · 超出 ${r1(value - target)}g` : bar === 'is-near' ? ' · 接近目标' : '';
+        return `<div class="hero-macro-item"><span class="hero-macro-label ${text}">${label} ${r1(value)} / ${target}g${hint}</span><div class="progress" role="progressbar" aria-label="${label}" aria-valuenow="${r1(value)}" aria-valuemin="0" aria-valuemax="${target}"><div class="progress-fill ${bar}" data-progress="${k}" style="width:${Math.min(100, Math.max(0, value / target * 100))}%"></div></div></div>`;
+      }).join('') + `</div>`;
   }
 
   // 2.3.3 餐次分段 #meal-seg
@@ -4835,7 +4848,7 @@ function bindEvents() {
         const item = itemById(el.dataset.id);
         const macros = readMacros('stock-' + el.dataset.id, true);
         if (macros === null) break;
-        if (macros && item) { item.nut = {...macros,fb:Number(item.nut && item.nut.fb) || 0}; stockChanged(); }
+        if (macros && item) saveItemNutrition(item, macros);
         delete UI.drafts['stock-' + el.dataset.id];
         const id = el.dataset.id;
         const inp = document.querySelector(`.stock-edit-input[data-id="${id}"]`);
