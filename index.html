@@ -2386,6 +2386,9 @@ const TODAY=new Date(); TODAY.setHours(0,0,0,0);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 function jobj(k){try{const v=JSON.parse(localStorage.getItem(k)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return{}}}
 function lsTry(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}
+class StorageError extends Error {}
+function storageAction(fn){return function(...args){try{return fn.apply(this,args)}catch(e){
+ if(!(e instanceof StorageError))throw e;toast(e.message);return false}}}
 function lsSet(k,v){if(lsTry(k,v))return true;
  if(k!==KEY&&k!==FKEY)return false;
  const B=Object.keys(localStorage).filter(x=>x.startsWith(KEY+'-backup-')).sort();
@@ -2423,11 +2426,11 @@ try{RDONE=jobj('shenchu-rdone')}catch(e){RDONE={}}
 function save(){return lsSet(KEY,JSON.stringify(DB))}
 function bump(){DB.edited=new Date().toISOString();return save()}
 
-const FIT0={target:1800,prot:140,fat:55,carb:185,fiber:25,tgtV:2,cookMode:'raw',wkTarget:4,log:{},combos:[],wk:{},plans:{},wt:{},act:{},extra:{}};
+const FIT0={target:1800,prot:140,fat:55,carb:185,fiber:25,tgtV:0,cookMode:'raw',wkTarget:4,log:{},combos:[],wk:{},plans:{},wt:{},act:{},extra:{}};
 let FIT;{const raw=localStorage.getItem(FKEY);let p={},bad=false;
  if(raw){try{p=JSON.parse(raw)}catch(e){bad=true}if(!bad&&(!p||typeof p!=='object'||Array.isArray(p)))bad=true}
  if(bad){p={};keepRaw(FKEY+'-corrupt-',raw,2)}
- FIT=Object.assign({},FIT0,{tgtV:0},p);
+ FIT=Object.assign({},FIT0,p);
  if(FIT.cookMode!=='cooked')FIT.cookMode='raw';
  if(!FIT.log||typeof FIT.log!=='object'||Array.isArray(FIT.log))FIT.log={};
  if(!Array.isArray(FIT.combos))FIT.combos=[];
@@ -2476,7 +2479,7 @@ function yieldOf(f){const g=grainOf(f);if(g)return g;if(f.cooked||f.proc)return 
 
 function foodList(){const L=[];const names=new Set();
  // 多食物记录只从饮食识别候选中排除，保留用户库存原数据。
- DB.items.filter(i=>i.kind!=='调料'&&!isMultiFoodStockInput(i.name)).forEach(i=>{names.add(fnorm(i.name));L.push({key:'i:'+i.id,id:i.id,src:'item',name:i.name,ru:i.orig&&i.orig!==i.name?i.orig:'',have:i.qty>0,nut:i.nut && i.nut.kcal !== undefined ? i.nut : getNut(i.name),group:i.group})});
+ DB.items.filter(i=>i.kind!=='调料'&&!isMultiFoodStockInput(i.name)).forEach(i=>{names.add(fnorm(i.name));L.push({key:'i:'+i.id,id:i.id,src:'item',name:i.name,ru:i.orig&&i.orig!==i.name?i.orig:'',have:i.qty>0,nut:i.nut && i.nut.kcal !== undefined ? i.nut : getNut(i.name,false),group:i.group})});
  (EMBED.foodSeed||[]).forEach(f=>{if((FIT.hideSeed||[]).includes(f.id))return;if(f.alias&&DB.items.some(i=>i.name===f.alias&&i.kind!=='调料'))return;if(names.has(fnorm(f.name)))return;
   L.push({key:'s:'+f.id,id:f.id,src:'seed',name:f.name,ru:'',have:false,nut:f.nut,cooked:f.cooked,proc:f.proc,group:''})});
  (EMBED.catalog||[]).forEach((c,idx)=>{const nm=c.zh||c.name||'';if(!nm||names.has(fnorm(nm)))return;names.add(fnorm(nm));
@@ -2508,7 +2511,7 @@ function syStamp(){const R=syRecords(),S=SY.st.recs,now=Date.now(),reseed=SY.st.
  for(const k in R){const h=syHash(R[k]),s=S[k];if(!s||s.h!==h||s.del){let u=reseed&&s&&!s.del?1:nextU(s,now);S[k]={h,u};ch++}}
  for(const k in S)if(!(k in R)&&!S[k].del){if(reseed&&k.startsWith('i:')){delete S[k];continue}S[k]={h:'del',u:nextU(S[k],now),del:1,ph:S[k].h,pu:S[k].u};ch++}
  SY.st.dbv=DB.version;sySaveSt();return{R,ch}}
-function syLocalDoc(){const{R}=syStamp(),recs={};for(const k in SY.st.recs){const s=SY.st.recs[k];if(!s.del&&R[k]===undefined)continue;recs[k]=s.del?{u:s.u,del:1}:{u:s.u,d:R[k]}}return{v:1,app:'1b的奇妙人生',recs}}
+function syLocalDoc(){const{R}=syStamp(),recs={};for(const k in SY.st.recs){const s=SY.st.recs[k];if(!s.del&&R[k]===undefined)continue;recs[k]=s.del?{u:s.u,del:1}:{u:k==='s'&&syIsDefault(k,R[k])?0:s.u,d:R[k]}}return{v:1,app:'1b的奇妙人生',recs}}
 function syMerge(a,b){const o={v:1,app:'1b的奇妙人生',updated:new Date().toISOString(),recs:{}},A=(a&&a.recs)||{},B=(b&&b.recs)||{};
  new Set([...Object.keys(A),...Object.keys(B)]).forEach(k=>{const x=A[k],y=B[k];o.recs[k]=!x?y:!y?x:(y.u>x.u?y:(x.u>y.u?x:(y.del?y:x)))});o.devs=Object.assign({},(a&&a.devs)||{});return o}
 function sySettings(d){const o=Object.assign({},d&&typeof d==='object'?d:{});for(const k of['target','prot','fat','carb','fiber','tgtV'])if(k in o&&!(typeof o[k]==='number'&&isFinite(o[k])))delete o[k];
@@ -2535,7 +2538,7 @@ function syApply(doc){if(!doc||!doc.recs)return;const recs=doc.recs,S={};const _
  Object.values(FIT.log).forEach(L=>L.sort((a,b)=>a.id<b.id?-1:1));
  for(const k in recs)S[k]=recs[k].del?{h:'del',u:recs[k].u,del:1}:{h:syHash(k.startsWith('e:')?recs[k].d:syRecords()[k]??recs[k].d),u:recs[k].u};
  _sv();_fs();SY.st.recs=S;syStamp();
- const R=syRecords();for(const k in R)if(SY.st.recs[k]&&!SY.st.recs[k].del)SY.st.recs[k].h=syHash(R[k]);sySaveSt();
+ const R=syRecords();for(const k in R)if(SY.st.recs[k]&&!SY.st.recs[k].del)SY.st.recs[k].h=syHash(R[k]);if(!sySaveSt())throw new StorageError('保存失败：同步状态无法写入，请腾出本机空间后重试');
  if(typeof window.renderAll==='function')window.renderAll()}
 const b64e=s=>btoa(unescape(encodeURIComponent(s))),b64d=s=>decodeURIComponent(escape(atob(s.replace(/\n/g,''))));
 async function syGet(){const r=await fetch(`https://api.github.com/repos/${syRepo()}/contents/${syPath()}?t=${Date.now()}`,{cache:'no-store',headers:{Authorization:'Bearer '+SY.cfg.token,Accept:'application/vnd.github+json'}});
@@ -2546,8 +2549,9 @@ async function syPut(doc,sha){const r=await fetch(`https://api.github.com/repos/
  body:JSON.stringify({message:'sync '+new Date().toISOString()+' '+syDev()+' v'+DB.version,content:b64e(JSON.stringify(doc)),sha:sha||undefined})});
  if(r.status===409||r.status===422)return null;if(!r.ok)throw new Error('PUT '+r.status);return(await r.json()).content.sha}
 function sySet(s,m){SY.state=s;SY.msg=m||'';if(typeof window.updateSyncUI==='function')window.updateSyncUI()}
-const SY_DEF_S=syHash({target:1800,prot:140,fat:55,carb:185,fiber:25,tgtV:2,cookMode:'raw',hideSeed:[]});
-function syIsDefault(k,d){if(k==='s')return syHash(d)===SY_DEF_S;
+const SY_DEF_S=syHash({target:FIT0.target,prot:FIT0.prot,fat:FIT0.fat,carb:FIT0.carb,fiber:FIT0.fiber,tgtV:FIT0.tgtV,cookMode:FIT0.cookMode,hideSeed:[]});
+// 旧版本的默认 tgtV 有 0 和 2；两者都不代表用户编辑过目标。
+function syIsDefault(k,d){if(k==='s')return !!d&&(d.tgtV||0)<=2&&syHash({...d,tgtV:FIT0.tgtV})===SY_DEF_S;
  if(k==='r')return !d||Object.keys(d).length===0;
  if(k.startsWith('c:'))return !!(d&&d.fixed);
  if(k.startsWith('i:')){const e=(EMBED.items||[]).find(x=>x.id===k.slice(2));return!!e&&syHash(d)===syHash(e)}return false}
@@ -2571,7 +2575,12 @@ async function syRun(){if(!syOn()){sySet('off');return}if(SY.busy){SY.again=1;re
  if(syOn()&&localStorage.getItem(SKEY+'-dirty'))SY.timer=setTimeout(syRun,Math.min(60000,2000*2**Math.min(SY.retry++,5)))}
 function syDirty(){if(SY.applying)return;SY.rev++;try{syStamp()}catch(e){}lsTry(SKEY+'-dirty','1');if(!syOn())return;clearTimeout(SY.timer);sySet('busy');if(SY.busy){SY.again=1;return}SY.timer=setTimeout(syRun,2000)}
 if(!SY.cfg.id){SY.cfg.id='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);lsTry(SKEY,JSON.stringify(SY.cfg))}
-{const s0=save,f0=fsave;save=function(){const r=s0();syDirty();return r};save.__orig=s0;fsave=function(){const r=f0();syDirty();return r};fsave.__orig=f0}
+{const s0=save,f0=fsave;let dbSaved=JSON.stringify(DB),fitSaved=JSON.stringify(FIT);
+ // 写失败时恢复上次保存的数据；失败操作不能进入同步或清空输入。
+ const sv=()=>{const raw=JSON.stringify(DB);if(!s0()){DB=JSON.parse(dbSaved);FOODS=null;throw new StorageError('保存失败：本机存储不可用或已满，输入已保留，请腾出空间后重试')}dbSaved=raw;return true};
+ const fs=()=>{const raw=JSON.stringify(FIT);if(!f0()){FIT=JSON.parse(fitSaved);throw new StorageError('保存失败：本机存储不可用或已满，输入已保留，请腾出空间后重试')}fitSaved=raw;return true};
+ save=function(){sv();syDirty();return true};save.__orig=sv;
+ fsave=function(){fs();syDirty();return true};fsave.__orig=fs}
 </script>
 <script id="ui-slot">
 // ===== UI 核心层：常量 =====
@@ -2717,7 +2726,7 @@ function frequentFoods(n = 2){
 
 const MACROS = [['kcal','热量','kcal'],['p','蛋白质 P','g'],['f','脂肪 F','g'],['c','碳水 C','g']];
 const NUT_DB = {};
-function getNut(name){
+function getNut(name, match = true){
   if (!name) return null;
   const n = String(name).trim().toLowerCase();
   const same = i => {
@@ -2735,7 +2744,7 @@ function getNut(name){
   // 3. 查内置食物匹配
   const built = [...(EMBED.foodSeed || []), ...(EMBED.catalog || []), ...(EMBED.items || [])].find(i => same(i) && i.nut && i.nut.kcal !== undefined);
   if (built && built.nut) return built.nut;
-  if (typeof foodMatch === 'function') {
+  if (match && typeof foodMatch === 'function') {
     const f = foodMatch(name, 30);
     if (f && f.nut && f.nut.kcal !== undefined && f.nut.kcal !== null) return f.nut;
   }
@@ -3262,11 +3271,6 @@ function renameItem(id, name){
 function deleteItem(id){
   const idx = DB.items.findIndex(i => i.id === id); if (idx < 0) return null;
   const [it] = DB.items.splice(idx, 1);
-  if(typeof SY!=='undefined'&&SY.st&&SY.st.recs){
-    const prev=SY.st.recs['i:'+id];
-    SY.st.recs['i:'+id]={h:'del',u:nextU(prev,Date.now()),del:1};
-    sySaveSt();
-  }
   stockChanged();
   return {it, idx};
 }
@@ -4520,18 +4524,20 @@ function saveSettings() {
     FIT.carb = nextCarb;
     FIT.tgtV = Date.now();
   }
+  if (tgtChanged) fsave();
 
   clearLegacyKeys();
 
   const tkEl = document.getElementById('set-token');
   if (tkEl && SY && SY.cfg) {
+    const cfg = {...SY.cfg};
     const tkVal = tkEl.value.trim();
-    if (tkVal) SY.cfg.token = tkVal;
-    else delete SY.cfg.token;
-    lsTry(SKEY, JSON.stringify(SY.cfg));
+    if (tkVal) cfg.token = tkVal;
+    else delete cfg.token;
+    if (!lsSet(SKEY, JSON.stringify(cfg))) throw new StorageError('保存失败：同步设置无法写入，输入已保留，请腾出本机空间后重试');
+    SY.cfg = cfg;
   }
 
-  if (tgtChanged) fsave();
   closeSettings();
   renderAll();
   if (typeof updateSyncUI === 'function') updateSyncUI();
@@ -4550,7 +4556,7 @@ function bindEvents() {
     window.toast = wrapped;
   }
 
-  document.addEventListener('click', (e) => {
+  document.addEventListener('click', storageAction((e) => {
     const el = e.target.closest('[data-act]');
     if (!el) return;
     const act = el.dataset.act;
@@ -4571,10 +4577,12 @@ function bindEvents() {
       case 'sync-now': {
         const tkEl = document.getElementById('set-token');
         if (tkEl && SY && SY.cfg) {
+          const cfg = {...SY.cfg};
           const tk = tkEl.value.trim();
-          if (tk) SY.cfg.token = tk;
-          else delete SY.cfg.token;
-          lsTry(SKEY, JSON.stringify(SY.cfg));
+          if (tk) cfg.token = tk;
+          else delete cfg.token;
+          if (!lsSet(SKEY, JSON.stringify(cfg))) throw new StorageError('保存失败：同步设置无法写入，输入已保留，请腾出本机空间后重试');
+          SY.cfg = cfg;
         }
         if (typeof updateSyncUI === 'function') updateSyncUI();
         if (typeof syOn === 'function' && syOn()) {
@@ -4843,11 +4851,6 @@ function bindEvents() {
           toast(`已删 ${uiName(snap.name)}`, '撤销', () => {
             if (!DB.items.some(x => x.id === snap.id)) {
               DB.items.splice(Math.min(idx, DB.items.length), 0, snap);
-              if(typeof SY!=='undefined'&&SY.st&&SY.st.recs){
-                const prev=SY.st.recs['i:'+snap.id];
-                SY.st.recs['i:'+snap.id]={h:syHash(snap),u:nextU(prev,Date.now())};
-                sySaveSt();
-              }
               if (typeof stockChanged === 'function') stockChanged();
               else bump();
               renderAll();
@@ -4930,7 +4933,7 @@ function bindEvents() {
         renderCook();
         break;
     }
-  });
+  }));
 
   document.addEventListener('input', e => {
     const input = e.target;
@@ -4962,12 +4965,12 @@ function bindEvents() {
 
   const stockAddPanel = document.getElementById('stock-add-panel');
   if (stockAddPanel) {
-    stockAddPanel.addEventListener('keydown', (e) => {
+    stockAddPanel.addEventListener('keydown', storageAction((e) => {
       if (e.key === 'Enter' && e.target && e.target.id === 'stock-new-name') {
         e.preventDefault();
         submitNewStock();
       }
-    });
+    }));
   }
 
   const stockSearch = document.getElementById('stock-search');
@@ -4976,7 +4979,7 @@ function bindEvents() {
       UI.stockQuery = e.target.value;
       renderStock();
     });
-    stockSearch.addEventListener('keydown', (e) => {
+    stockSearch.addEventListener('keydown', storageAction((e) => {
       if (e.key === 'Enter') {
         const q = (UI.stockQuery || '').trim();
         if (rejectMultiFoodStock(q)) { e.preventDefault(); return null; }
@@ -5003,13 +5006,13 @@ function bindEvents() {
           }
         }
       }
-    });
+    }));
   }
 
   ['wt-input', 'act-input'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
-    el.addEventListener('change', () => saveBody());
+    el.addEventListener('change', storageAction(saveBody));
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
@@ -5074,16 +5077,19 @@ function importHealth() {
   };
   const rawDate = (q.get('date') ?? q.get('d') ?? '').trim();
   const today = dk();
-  let d = today;
-  if (rawDate) {
-    const m = rawDate.match(/^(\d{4})([-./])(\d{1,2})\2(\d{1,2})$/);
-    if (m) d = `${m[1]}-${m[3].padStart(2,'0')}-${m[4].padStart(2,'0')}`;
-    if (!m || dk(new Date(d + 'T12:00:00')) !== d || d > today) {
-      history.replaceState(null, '', location.pathname + location.hash);
-      renderAll();
-      setTimeout(() => toast('⚠️ 健康导入：日期无效'), 300);
-      return true;
-    }
+  if (!rawDate) {
+    history.replaceState(null, '', location.pathname + location.hash);
+    renderAll();
+    setTimeout(() => toast('⚠️ 健康导入：缺少数据所属日期，请在链接中添加 date=年-月-日'), 300);
+    return true;
+  }
+  const m = rawDate.match(/^(\d{4})([-./])(\d{1,2})\2(\d{1,2})$/);
+  const d = m ? `${m[1]}-${m[3].padStart(2,'0')}-${m[4].padStart(2,'0')}` : null;
+  if (!m || dk(new Date(d + 'T12:00:00')) !== d || d > today) {
+    history.replaceState(null, '', location.pathname + location.hash);
+    renderAll();
+    setTimeout(() => toast('⚠️ 健康导入：日期无效'), 300);
+    return true;
   }
   const a = num(q.get('active') ?? q.get('act') ?? q.get('burn'));
   const w = num(q.get('weight') ?? q.get('wt'));
@@ -5100,7 +5106,7 @@ function importHealth() {
     msg.push(`体重 ${kg} kg`);
   }
   if (msg.length) {
-    fsave();
+    if (storageAction(fsave)() === false) return true;
     if (d <= dk()) CUR_DAY = d;
     if (d !== dk()) UI.trendOpen = true;
   }
