@@ -4639,6 +4639,8 @@ function bindEvents() {
       case 'cook-mode': {
         const mode = el.dataset.v;
         if (!['raw','cooked'].includes(mode)) break;
+        // 称重方式与营养目标共用设置记录，切回默认值也要保留编辑标记。
+        if (FIT.cookMode !== mode) FIT.tgtV = Date.now();
         FIT.cookMode = mode;
         UI.preview.forEach((it, i) => {
           if (!setItemMode(it, mode)) return;
@@ -5106,7 +5108,10 @@ function importHealth() {
     msg.push(`体重 ${kg} kg`);
   }
   if (msg.length) {
-    if (storageAction(fsave)() === false) return true;
+    if (storageAction(fsave)() === false) {
+      renderAll();
+      return true;
+    }
     if (d <= dk()) CUR_DAY = d;
     if (d !== dk()) UI.trendOpen = true;
   }
