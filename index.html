@@ -2519,8 +2519,8 @@ function syMerge(a,b){const o={v:1,app:'1b的奇妙人生',updated:new Date().to
 function sySettings(d){const o=Object.assign({},d&&typeof d==='object'?d:{});for(const k of['target','prot','fat','carb','fiber','tgtV'])if(k in o&&!(typeof o[k]==='number'&&isFinite(o[k])))delete o[k];
  if(o.cookMode!=='raw'&&o.cookMode!=='cooked')delete o.cookMode;if(!Array.isArray(o.hideSeed))delete o.hideSeed;return o}
 function syApply(doc){if(!doc||!doc.recs)return;const recs=doc.recs,S={};const _sv=save.__orig||save,_fs=fsave.__orig||fsave;
- // 任一步写入失败都要把三者一起退回，否则重试时内存里的云端旧值会被当成本机新改动推回云端。
- const snap=JSON.stringify({DB,FIT,st:SY.st});
+ // 任一步写入失败都要把数据和保存缓存一起退回，否则重试会把云端旧值当成本机新改动。
+ const snap=JSON.stringify({DB,FIT,st:SY.st}),dbPrev=dbSaved,fitPrev=fitSaved;
  try{
  const order=DB.items.map(i=>i.id),items=[];
  Object.keys(recs).filter(k=>k.startsWith('i:')&&!recs[k].del&&recs[k].d).sort((a,b)=>{const ia=order.indexOf(a.slice(2)),ib=order.indexOf(b.slice(2));return(ia<0?1e9:ia)-(ib<0?1e9:ib)}).forEach(k=>items.push(recs[k].d));
@@ -2544,7 +2544,7 @@ function syApply(doc){if(!doc||!doc.recs)return;const recs=doc.recs,S={};const _
  for(const k in recs)S[k]=recs[k].del?{h:'del',u:recs[k].u,del:1}:{h:syHash(k.startsWith('e:')?recs[k].d:syRecords()[k]??recs[k].d),u:recs[k].u};
  _sv();_fs();SY.st.recs=S;syStamp();
  const R=syRecords();for(const k in R)if(SY.st.recs[k]&&!SY.st.recs[k].del)SY.st.recs[k].h=syHash(R[k]);if(!sySaveSt())throw new StorageError('保存失败：同步状态无法写入，请腾出本机空间后重试');
- }catch(e){const o=JSON.parse(snap);DB=o.DB;FIT=o.FIT;SY.st=o.st;FOODS=null;throw e}
+ }catch(e){const o=JSON.parse(snap);DB=o.DB;FIT=o.FIT;SY.st=o.st;dbSaved=dbPrev;fitSaved=fitPrev;FOODS=null;throw e}
  if(typeof window.renderAll==='function')window.renderAll()}
 const b64e=s=>btoa(unescape(encodeURIComponent(s))),b64d=s=>decodeURIComponent(escape(atob(s.replace(/\n/g,''))));
 async function syGet(){const r=await fetch(`https://api.github.com/repos/${syRepo()}/contents/${syPath()}?t=${Date.now()}`,{cache:'no-store',headers:{Authorization:'Bearer '+SY.cfg.token,Accept:'application/vnd.github+json'}});
@@ -2581,7 +2581,8 @@ async function syRun(){if(!syOn()){sySet('off');return}if(SY.busy){SY.again=1;re
  if(syOn()&&localStorage.getItem(SKEY+'-dirty'))SY.timer=setTimeout(syRun,Math.min(60000,2000*2**Math.min(SY.retry++,5)))}
 function syDirty(){if(SY.applying)return;SY.rev++;try{syStamp()}catch(e){}lsTry(SKEY+'-dirty','1');if(!syOn())return;clearTimeout(SY.timer);sySet('busy');if(SY.busy){SY.again=1;return}SY.timer=setTimeout(syRun,2000)}
 if(!SY.cfg.id){SY.cfg.id='d'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);lsTry(SKEY,JSON.stringify(SY.cfg))}
-{const s0=save,f0=fsave;let dbSaved=JSON.stringify(DB),fitSaved=JSON.stringify(FIT);
+let dbSaved=JSON.stringify(DB),fitSaved=JSON.stringify(FIT);
+{const s0=save,f0=fsave;
  // 写失败时恢复上次保存的数据；失败操作不能进入同步或清空输入。
  const sv=()=>{const raw=JSON.stringify(DB);if(!s0()){DB=JSON.parse(dbSaved);FOODS=null;throw new StorageError('保存失败：本机存储不可用或已满，输入已保留，请腾出空间后重试')}dbSaved=raw;return true};
  const fs=()=>{const raw=JSON.stringify(FIT);if(!f0()){FIT=JSON.parse(fitSaved);throw new StorageError('保存失败：本机存储不可用或已满，输入已保留，请腾出空间后重试')}fitSaved=raw;return true};
@@ -3164,12 +3165,13 @@ function stockGroupTitle(it){
 }
 // 商品名里的规格数字不算第二个食物的数量：0蔗糖、1:1:1、2x250g、3.6g蛋白、3.2纯牛奶、2盒200g。
 const SPEC_NUM_RE = new RegExp([
-  // 0 紧跟在名称后才算规格；开头的「0鸡蛋35佛手瓜」仍是零数量连写。
-  '(?<=[\\u4e00-\\u9fa5A-Za-z])0(?:\\.0+)?(?=\\s*[\\u4e00-\\u9fa5])',
+  // 名称后可有空格；开头的「0鸡蛋35佛手瓜」仍是零数量连写。
+  '(?<=[\\u4e00-\\u9fa5A-Za-z]\\s*)0(?:\\.0+)?(?=\\s*[\\u4e00-\\u9fa5])',
   '\\d+(?:\\s*[:：]\\s*\\d+)+',
   '\\d+\\s*[x×*](?=\\s*\\d)',
   '\\d+(?:\\.\\d+)?\\s*(?:g|克)?(?=\\s*(?:蛋白(?!粉)|脂肪|碳水|膳食纤维|钙))',
-  '\\d+\\.\\d+(?!\\s*(?:' + QTY_UNIT + '))(?=\\s*[\\u4e00-\\u9fa5A-Za-z])',
+  // 无单位小数只在开头的品牌后算规格，避免遮住连写中的真实克重。
+  '(?<=^[\\u4e00-\\u9fa5A-Za-z\\s]+)\\d+\\.\\d+(?!\\s*(?:' + QTY_UNIT + '))(?=\\s*[\\u4e00-\\u9fa5A-Za-z])',
   '\\d+\\s*(?:盒|罐|瓶|袋|片|支|听|杯)(?=\\s*\\d+(?:\\.\\d+)?\\s*(?:kg|g|ml|l|千克|公斤|克|毫升|升)\\s*$)'
 ].join('|'), 'gi');
 function isMultiFoodStockInput(s){
