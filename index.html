@@ -4642,12 +4642,13 @@ function bindEvents() {
         // 称重方式与营养目标共用设置记录，切回默认值也要保留编辑标记。
         if (FIT.cookMode !== mode) FIT.tgtV = Date.now();
         FIT.cookMode = mode;
+        fsave();
         UI.preview.forEach((it, i) => {
           if (!setItemMode(it, mode)) return;
           delete UI.drafts['pv-' + i];
           if (UI.autoCalories) delete UI.autoCalories['pv-' + i];
         });
-        fsave(); renderToday();
+        renderToday();
         break;
       }
       case 'pv-mode': {
