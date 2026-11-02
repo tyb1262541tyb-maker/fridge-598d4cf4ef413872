@@ -2481,7 +2481,7 @@ function yieldOf(f){const g=grainOf(f);if(g)return g;if(f.proc)return null;if(f.
  for(const[re,y,t]of YIELD)if(re.test(f.name))return y?{y,t}:null;return null}
 
 function foodList(){const L=[];const names=new Set();
- DB.items.filter(i=>i.kind!=='调料').forEach(i=>{names.add(fnorm(i.name));L.push({key:'i:'+i.id,id:i.id,src:'item',name:i.name,ru:i.orig&&i.orig!==i.name?i.orig:'',have:i.qty>0,nut:i.nut && i.nut.kcal !== undefined ? i.nut : getNut(i.name,false),group:i.group,cooked:i.cooked,proc:i.proc})});
+ DB.items.filter(i=>i.kind!=='调料'&&!isMultiFoodStockInput(i.name)).forEach(i=>{names.add(fnorm(i.name));L.push({key:'i:'+i.id,id:i.id,src:'item',name:i.name,ru:i.orig&&i.orig!==i.name?i.orig:'',have:i.qty>0,nut:i.nut && i.nut.kcal !== undefined ? i.nut : getNut(i.name,false),group:i.group,cooked:i.cooked,proc:i.proc})});
  (EMBED.foodSeed||[]).forEach(f=>{if((FIT.hideSeed||[]).includes(f.id))return;if(f.alias&&DB.items.some(i=>i.name===f.alias&&i.kind!=='调料'))return;if(names.has(fnorm(f.name)))return;
   L.push({key:'s:'+f.id,id:f.id,src:'seed',name:f.name,ru:'',have:false,nut:f.nut,cooked:f.cooked,proc:f.proc,group:''})});
  (EMBED.catalog||[]).forEach((c,idx)=>{const nm=c.zh||c.name||'';if(!nm||names.has(fnorm(nm)))return;names.add(fnorm(nm));
@@ -2520,7 +2520,8 @@ function sySettings(d){const o=Object.assign({},d&&typeof d==='object'?d:{});for
  if(o.cookMode!=='raw'&&o.cookMode!=='cooked')delete o.cookMode;if(!Array.isArray(o.hideSeed))delete o.hideSeed;return o}
 function syApply(doc){if(!doc||!doc.recs)return;const recs=doc.recs,S={};const _sv=save.__orig||save,_fs=fsave.__orig||fsave;
  // 任一步写入失败都要把数据和保存缓存一起退回，否则重试会把云端旧值当成本机新改动。
- const snap=JSON.stringify({DB,FIT,st:SY.st}),dbPrev=dbSaved,fitPrev=fitSaved;
+ const snap=JSON.stringify({DB,FIT,st:SY.st,RDONE}),dbPrev=dbSaved,fitPrev=fitSaved;
+ const stored=[KEY,FKEY,STKEY,'shenchu-rdone'].map(k=>[k,localStorage.getItem(k)]);
  try{
  const order=DB.items.map(i=>i.id),items=[];
  Object.keys(recs).filter(k=>k.startsWith('i:')&&!recs[k].del&&recs[k].d).sort((a,b)=>{const ia=order.indexOf(a.slice(2)),ib=order.indexOf(b.slice(2));return(ia<0?1e9:ia)-(ib<0?1e9:ib)}).forEach(k=>items.push(recs[k].d));
@@ -2544,7 +2545,12 @@ function syApply(doc){if(!doc||!doc.recs)return;const recs=doc.recs,S={};const _
  for(const k in recs)S[k]=recs[k].del?{h:'del',u:recs[k].u,del:1}:{h:syHash(k.startsWith('e:')?recs[k].d:syRecords()[k]??recs[k].d),u:recs[k].u};
  _sv();_fs();SY.st.recs=S;syStamp();
  const R=syRecords();for(const k in R)if(SY.st.recs[k]&&!SY.st.recs[k].del)SY.st.recs[k].h=syHash(R[k]);if(!sySaveSt())throw new StorageError('保存失败：同步状态无法写入，请腾出本机空间后重试');
- }catch(e){const o=JSON.parse(snap);DB=o.DB;FIT=o.FIT;SY.st=o.st;dbSaved=dbPrev;fitSaved=fitPrev;FOODS=null;throw e}
+ }catch(e){const o=JSON.parse(snap);DB=o.DB;FIT=o.FIT;SY.st=o.st;RDONE=o.RDONE;dbSaved=dbPrev;fitSaved=fitPrev;FOODS=null;
+  // 先腾出本轮写入的空间，再还原原值；刷新后也必须与回滚后的同步状态一致。
+  const changed=stored.filter(([k,v])=>localStorage.getItem(k)!==v);
+  for(const[k]of changed)localStorage.removeItem(k);
+  for(const[k,v]of changed)if(v!==null)localStorage.setItem(k,v);
+  throw e}
  if(typeof window.renderAll==='function')window.renderAll()}
 const b64e=s=>btoa(unescape(encodeURIComponent(s))),b64d=s=>decodeURIComponent(escape(atob(s.replace(/\n/g,''))));
 async function syGet(){const r=await fetch(`https://api.github.com/repos/${syRepo()}/contents/${syPath()}?t=${Date.now()}`,{cache:'no-store',headers:{Authorization:'Bearer '+SY.cfg.token,Accept:'application/vnd.github+json'}});
@@ -2939,10 +2945,13 @@ function foodMatch(q, min = 30){
     if (!f.nut || !(Number(f.nut.kcal) >= 0)) continue;
     const nm = uiName(f.name), fn = fnorm(nm).toLowerCase();
     if (!fn) continue;
+    if (/^(?:鸡?蛋白|蛋清)$/.test(n) && /蛋白粉|乳清|protein|whey/i.test(fn)) continue;
     let s = 0, viaAlias = false;
     if (fn === n) s = 100;
-    // 反向前缀只放行切法/做法后缀：鸡胸肉片→鸡胸肉；鸡蛋白、土豆泥、番茄炒蛋仍不算原食材。
-    else if (fn.startsWith(n) || (fn.length >= 2 && n.startsWith(fn) && /^(?:片|丁|块|丝|水煮|煮|蒸|热)$/.test(n.slice(fn.length)))) s = 70;
+    // 切法仅放行肉禽和黄瓜，避免把奶片、果蔬片、鱿鱼丝等加工食品算成原料。
+    else if (fn.startsWith(n) || (fn.length >= 2 && n.startsWith(fn) &&
+      (/^(?:水煮|煮|蒸|热|炒)$/.test(n.slice(fn.length)) ||
+       (!f.proc && (f.group === '肉禽' || fn === '黄瓜' || /鸡胸|鸡脯|鸡腿|牛肉|猪肉|羊肉|里脊/.test(fn)) && /^(?:片|丁|块|丝|末)$/.test(n.slice(fn.length)))))) s = 70;
     else if (n.length >= 2 && fn.includes(n)) s = 50;
     else if (n.length >= 2 && f.hay.includes(n)) s = 30;
     if (al && !FOOD_ALIAS_EXCL.test(fn) && !(al.excl && al.excl.test(fn))) {
@@ -3023,7 +3032,7 @@ function chineseQty(s){
 }
 function maskNameNumbers(s){
   // 等长遮罩只用于找数量，切分及名称仍取原文；0卡也不能当营养速记。
-  return s.replace(/\d+\s*合\s*\d+|\d+(?:\s*\+\s*\d+)+|\d+(?:\.\d+)?\s*(?:°\s*C?|℃)/gi, m => '_'.repeat(m.length)).replace(/\d+(?:[.,]\d+)?\s*[%％]|(?<![\d.])0(?:\.0+)?\s*[脂糖卡]/g, m => '·'.repeat(m.length));
+  return s.replace(SPEC_NUM_RE, m => '·'.repeat(m.length)).replace(/\d+\s*合\s*\d+|\d+(?:\s*\+\s*\d+)+|\d+(?:\.\d+)?\s*(?:°\s*C?|℃)/gi, m => '_'.repeat(m.length)).replace(/\d+(?:[.,]\d+)?\s*[%％]|(?<![\d.])0(?:\.0+)?\s*[脂糖卡]/g, m => '·'.repeat(m.length));
 }
 function qtyTokens(s){
   const re = new RegExp(QTY_RE, 'gi'), out = [], masked = maskNameNumbers(s);
@@ -3169,9 +3178,9 @@ const SPEC_NUM_RE = new RegExp([
   '(?<=[\\u4e00-\\u9fa5A-Za-z]\\s*)0(?:\\.0+)?(?=\\s*[\\u4e00-\\u9fa5])',
   '\\d+(?:\\s*[:：]\\s*\\d+)+',
   '\\d+\\s*[x×*](?=\\s*\\d)',
-  '\\d+(?:\\.\\d+)?\\s*(?:g|克)?(?=\\s*(?:蛋白(?!粉)|脂肪|碳水|膳食纤维|钙))',
-  // 无单位小数只在开头的品牌后算规格，避免遮住连写中的真实克重。
-  '(?<=^[\\u4e00-\\u9fa5A-Za-z\\s]+)\\d+\\.\\d+(?!\\s*(?:' + QTY_UNIT + '))(?=\\s*[\\u4e00-\\u9fa5A-Za-z])',
+  '\\d+(?:\\.\\d+)?\\s*(?:g|克)(?=\\s*(?:蛋白(?!粉)|脂肪|碳水|膳食纤维|钙))',
+  // 品牌小数后只接名称或带单位的包装量；末尾裸数字仍按连写数量处理。
+  '(?<=^[\\u4e00-\\u9fa5A-Za-z\\s]+)\\d+\\.\\d+(?!\\s*(?:' + QTY_UNIT + '))(?=\\s*[\\u4e00-\\u9fa5A-Za-z]+(?:\\s*\\d+(?:\\.\\d+)?\\s*(?:kg|g|ml|l|千克|公斤|克|毫升|升))?\\s*$)',
   '\\d+\\s*(?:盒|罐|瓶|袋|片|支|听|杯)(?=\\s*\\d+(?:\\.\\d+)?\\s*(?:kg|g|ml|l|千克|公斤|克|毫升|升)\\s*$)'
 ].join('|'), 'gi');
 function isMultiFoodStockInput(s){
