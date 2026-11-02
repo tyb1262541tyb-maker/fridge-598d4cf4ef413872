@@ -2948,10 +2948,10 @@ function foodMatch(q, min = 30){
     if (/^(?:鸡?蛋白|蛋清)$/.test(n) && /蛋白粉|乳清|protein|whey/i.test(fn)) continue;
     let s = 0, viaAlias = false;
     if (fn === n) s = 100;
-    // 切法仅放行肉禽和黄瓜，避免把奶片、果蔬片、鱿鱼丝等加工食品算成原料。
+    // 常见原料切法可直认；土豆片按薯片处理，不能套原料营养。
     else if (fn.startsWith(n) || (fn.length >= 2 && n.startsWith(fn) &&
       (/^(?:水煮|煮|蒸|热|炒)$/.test(n.slice(fn.length)) ||
-       (!f.proc && (f.group === '肉禽' || fn === '黄瓜' || /鸡胸|鸡脯|鸡腿|牛肉|猪肉|羊肉|里脊/.test(fn)) && /^(?:片|丁|块|丝|末)$/.test(n.slice(fn.length)))))) s = 70;
+       (!f.proc && n !== '土豆片' && (f.group === '肉禽' || /^(?:黄瓜|土豆|胡萝卜|洋葱|南瓜)$/.test(fn) || /鸡胸|鸡脯|鸡腿|牛肉|猪肉|羊肉|里脊/.test(fn)) && /^(?:片|丁|块|丝|末)$/.test(n.slice(fn.length)))))) s = 70;
     else if (n.length >= 2 && fn.includes(n)) s = 50;
     else if (n.length >= 2 && f.hay.includes(n)) s = 30;
     if (al && !FOOD_ALIAS_EXCL.test(fn) && !(al.excl && al.excl.test(fn))) {
@@ -3024,6 +3024,7 @@ const QTY_RE = '(?<![№#.\\d' + CN_QTY_CHARS + '])' +
   '|([' + CN_QTY_CHARS + '\\d]+)(?=\\s*(?:' + QTY_UNIT + ')))\\s*(' + QTY_UNIT + ')?';
 const MACRO_RE = /(\d+(?:\.\d+)?)\s*(kcal|千卡|大卡|卡|[pfc])(?=\s|$|\d)/gi;
 const CN_NUM = {'半':0.5,'一':1,'二':2,'两':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10};
+const NAME_ZERO_RE = /(?<=[\u4e00-\u9fa5A-Za-z]\s*)0(?:\.0+)?(?=\s*[\u4e00-\u9fa5])/g;
 function chineseQty(s){
   if (CN_NUM[s] !== undefined) return CN_NUM[s];
   // 支持一至九十九及「半」；百、千、小数、约数等交给待确认流程。
@@ -3032,7 +3033,7 @@ function chineseQty(s){
 }
 function maskNameNumbers(s){
   // 等长遮罩只用于找数量，切分及名称仍取原文；0卡也不能当营养速记。
-  return s.replace(SPEC_NUM_RE, m => '·'.repeat(m.length)).replace(/\d+\s*合\s*\d+|\d+(?:\s*\+\s*\d+)+|\d+(?:\.\d+)?\s*(?:°\s*C?|℃)/gi, m => '_'.repeat(m.length)).replace(/\d+(?:[.,]\d+)?\s*[%％]|(?<![\d.])0(?:\.0+)?\s*[脂糖卡]/g, m => '·'.repeat(m.length));
+  return s.replace(NAME_ZERO_RE, m => '·'.repeat(m.length)).replace(/\d+\s*合\s*\d+|\d+(?:\s*\+\s*\d+)+|\d+(?:\.\d+)?\s*(?:°\s*C?|℃)/gi, m => '_'.repeat(m.length)).replace(/\d+(?:[.,]\d+)?\s*[%％]|(?<![\d.])0(?:\.0+)?\s*[脂糖卡]/g, m => '·'.repeat(m.length));
 }
 function qtyTokens(s){
   const re = new RegExp(QTY_RE, 'gi'), out = [], masked = maskNameNumbers(s);
@@ -3175,16 +3176,20 @@ function stockGroupTitle(it){
 // 商品名里的规格数字不算第二个食物的数量：0蔗糖、1:1:1、2x250g、3.6g蛋白、3.2纯牛奶、2盒200g。
 const SPEC_NUM_RE = new RegExp([
   // 名称后可有空格；开头的「0鸡蛋35佛手瓜」仍是零数量连写。
-  '(?<=[\\u4e00-\\u9fa5A-Za-z]\\s*)0(?:\\.0+)?(?=\\s*[\\u4e00-\\u9fa5])',
+  NAME_ZERO_RE.source,
   '\\d+(?:\\s*[:：]\\s*\\d+)+',
   '\\d+\\s*[x×*](?=\\s*\\d)',
-  '\\d+(?:\\.\\d+)?\\s*(?:g|克)(?=\\s*(?:蛋白(?!粉)|脂肪|碳水|膳食纤维|钙))',
+  '(?<=^[\\u4e00-\\u9fa5A-Za-z\\s]+)\\d+(?:\\.\\d+)?\\s*(?:g|克)(?=\\s*(?:蛋白(?!粉)|脂肪|碳水|膳食纤维|钙))',
   // 品牌小数后只接名称或带单位的包装量；末尾裸数字仍按连写数量处理。
   '(?<=^[\\u4e00-\\u9fa5A-Za-z\\s]+)\\d+\\.\\d+(?!\\s*(?:' + QTY_UNIT + '))(?=\\s*[\\u4e00-\\u9fa5A-Za-z]+(?:\\s*\\d+(?:\\.\\d+)?\\s*(?:kg|g|ml|l|千克|公斤|克|毫升|升))?\\s*$)',
   '\\d+\\s*(?:盒|罐|瓶|袋|片|支|听|杯)(?=\\s*\\d+(?:\\.\\d+)?\\s*(?:kg|g|ml|l|千克|公斤|克|毫升|升)\\s*$)'
 ].join('|'), 'gi');
 function isMultiFoodStockInput(s){
-  const n = normFoodInput(s), stripped = n.replace(new RegExp(MACRO_RE.source, 'gi'), ' ').trim().replace(SPEC_NUM_RE, m => '_'.repeat(m.length));
+  const n = normFoodInput(s), stripped = n.replace(new RegExp(MACRO_RE.source, 'gi'), ' ').trim().replace(SPEC_NUM_RE, (m, offset, text) => {
+    // 食物简称后的无单位小数是克重；品牌后的小数才按商品规格保留。
+    if (/^\d+\.\d+$/.test(m) && foodAliasOf(text.slice(0, offset).trim())) return m;
+    return '_'.repeat(m.length);
+  });
   const ns = qtyTokens(stripped);
   if (ns.length < 2) return false;
   const tokens = [];
