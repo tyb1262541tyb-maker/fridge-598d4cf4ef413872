@@ -5143,7 +5143,7 @@ function bindEvents() {
 // Apple 快捷指令 / 健康导入：先保存，再进行首次云端合并与推送。
 function importHealth() {
   const q = new URLSearchParams(location.search);
-  if (!['hk','active','act','burn','weight','wt'].some(k => q.has(k))) return false;
+  if (!['hk','active','act','burn','weight','wt'].some(k => q.has(k)) && ![...q.keys()].some(k => /^(act|wt)_/.test(k))) return false;
   const num = s => {
     if (s == null) return null;
     s = String(s).replace(/\s|\u00a0|\u202f|'/g, '');
@@ -5159,6 +5159,32 @@ function importHealth() {
     const v = Number(s);
     return Number.isFinite(v) ? v : null;
   };
+  const days = [...q].filter(([k]) => /^(act|wt)_\d{4}-\d{2}-\d{2}$/.test(k));
+  if (days.length) {
+    const today = dk(), earliest = addDays(today, -7), now = Date.now(), msg = [];
+    FIT.act = FIT.act || {}; FIT.wt = FIT.wt || {};
+    for (const [key, raw] of days.sort(([a], [b]) => a.slice(a.indexOf('_') + 1).localeCompare(b.slice(b.indexOf('_') + 1)))) {
+      const d = key.slice(key.indexOf('_') + 1), active = key.startsWith('act_');
+      if (dk(new Date(d + 'T12:00:00')) !== d || d > today || d < earliest) continue;
+      const n = num(raw);
+      if (n == null || n < (active ? 0 : 30) || n > (active ? 5000 : 250)) continue;
+      const records = active ? FIT.act : FIT.wt, field = active ? 'kcal' : 'kg';
+      const value = active ? Math.round(n) : Math.round(n * 10) / 10, old = records[d];
+      if ((value === 0 && old?.[field]) || old?.[field] === value) continue;
+      records[d] = {[field]: value, at: now};
+      msg.push(`${d.slice(5)} ${active ? '活动' : '体重'} ${value} ${active ? 'kcal' : 'kg'}${old ? '（已更新）' : ''}`);
+    }
+    if (msg.length && storageAction(fsave)() === false) {
+      renderAll();
+      return true;
+    }
+    CUR_DAY = today;
+    UI.trendOpen = true;
+    history.replaceState(null, '', location.pathname + location.hash);
+    renderAll();
+    setTimeout(() => toast(msg.length ? '✅ 已从健康导入：' + msg.join('、') : '健康导入：没有变化或没有可用的新数据'), 300);
+    return true;
+  }
   const rawDate = (q.get('date') ?? q.get('d') ?? '').trim();
   const today = dk();
   if (!rawDate) {
