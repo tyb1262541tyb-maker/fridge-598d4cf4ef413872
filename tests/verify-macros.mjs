@@ -92,7 +92,7 @@ const eq = assert.deepEqual;
 
 test('自定义餐次、食材复用、营养匹配和每日合计', () => {
   const s = sandbox();
-  s.run('bindEvents(); UI.meal = "lunch";');
+  s.run('bindEvents(); UI.meal = "lunch"; UI.customSaveDb = true;');
   s.fill('cf-name','麦当劳双层吉士汉堡'); s.fill('cf-g',100);
   s.macros('cf',{kcal:450,p:25,f:24,c:34});
   s.action('custom-submit');
@@ -138,12 +138,17 @@ test('自动计算热量、手动覆盖、200g 折算、同名更新、撤销和
   s.fill('cf-kcal',500); s.run('UI.autoCalories.cf = false; autoKcal("cf")');
   assert.equal(s.run('document.getElementById("cf-kcal").value'),'500');
   s.run('autoKcal("cf",true)');
+  assert.equal(s.run('UI.customSaveDb'),false, '自定义默认不存库');
+  s.run('UI.customSaveDb = true');
   s.fill('cf-name','测试外卖'); s.fill('cf-g',200); s.action('custom-submit');
   eq(s.read('getNut("测试外卖")'),{kcal:226,p:12.5,f:12,c:17,fb:0});
+  // 同名再记：只记本餐，库存营养不变（2026-11-10 规则）
   s.fill('cf-name','测试外卖'); s.fill('cf-g',100); s.macros('cf',{kcal:300,p:10,f:10,c:40});
   s.run('UI.customSaveDb = true'); s.action('custom-submit');
   assert.equal(s.run('DB.items.filter(i=>i.name==="测试外卖").length'),1);
-  assert.equal(s.run('getNut("测试外卖").kcal'),300);
+  assert.equal(s.run('getNut("测试外卖").kcal'),226);
+  assert.equal(s.run('dayLog(CUR_DAY).at(-1).kcal'),300);
+  assert.equal(s.run('dayLog(CUR_DAY).at(-1).src'),'custom');
   s.state.undo();
   assert.equal(s.run('getNut("测试外卖").kcal'),226);
   s.fill('cf-name','仅本餐外卖'); s.fill('cf-g',100); s.macros('cf',{kcal:300,p:10,f:10,c:40});
@@ -187,7 +192,7 @@ test('同一网址再次打开不累加、不改时间戳、不保存、不产�
   assert.match(s.state.notices.at(-1),/没有变化/);
 });
 
-test('0 和四舍五入后的 0 不覆盖已有非 0 活动；空日期可记 0', () => {
+test('0 和四舍五入后的 0 一律不写入（已有值不变，空日期也不记 0）', () => {
   const s = sandbox();
   s.run('FIT.act["2026-11-06"] = {kcal:410,at:1}; FIT.wt["2026-11-06"] = {kg:72.4,at:1};');
   s.importURL('?act_2026-11-06=0&wt_2026-11-06=0');
@@ -196,7 +201,9 @@ test('0 和四舍五入后的 0 不覆盖已有非 0 活动；空日期可记 0'
   assert.equal(s.state.saves,0);
   s.importURL('?act_2026-11-06=0.4&act_2026-11-07=0');
   eq(s.read('FIT.act["2026-11-06"]'),{kcal:410,at:1});
-  assert.equal(s.run('FIT.act["2026-11-07"].kcal'),0);
+  assert.equal(s.run('FIT.act["2026-11-07"]'),undefined);
+  s.importURL('?hk=1&date=2026-11-05&active=0');
+  assert.equal(s.run('FIT.act["2026-11-05"]'),undefined);
 });
 
 test('未来、8 天前、虚构日期和超出范围的数被拒，7 天前和范围端点可用', () => {
@@ -205,7 +212,7 @@ test('未来、8 天前、虚构日期和超出范围的数被拒，7 天前和�
   eq(s.read('FIT.act'),{}); eq(s.read('FIT.wt'),{}); assert.equal(s.state.saves,0);
   assert.equal(s.state.cleaned,'/test/#today');
   s.importURL('?act_2026-10-31=5000&wt_2026-10-31=30&act_2026-11-07=0&wt_2026-11-07=250');
-  eq(s.read('Object.keys(FIT.act).sort()'),['2026-10-31','2026-11-07']);
+  eq(s.read('Object.keys(FIT.act).sort()'),['2026-10-31']);
   assert.equal(s.run('FIT.wt["2026-10-31"].kg'),30);
   assert.equal(s.run('FIT.wt["2026-11-07"].kg'),250);
   assert.equal(s.state.saves,1);
