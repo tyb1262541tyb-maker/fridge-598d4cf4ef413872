@@ -58,17 +58,18 @@ await test('内置默认库每样食物都有熟重÷生重比例和依据', () 
   assert.equal(E.items.length, 86);
   for (const it of E.items) { assert.ok(it.cookRatio > 0 && it.cookRatio <= 10, it.name); assert.ok(it.cookBasis, it.name); }
   const by = Object.fromEntries(E.items.map(i => [i.id, i.cookRatio]));
-  eq([by.i81, by.i51, by.i52, by.i50, by.i35, by.i20, by.i77], [0.7, 2.5, 2.3, 1, 1, 1, 1]);
+  eq([by.i81, by.i51, by.i52, by.i50, by.i35, by.i20, by.i77], [0.7, 2.2, 2.3, 0.92, 1, 1, 1]);
 });
 
 await test('按比例换算：熟重→生重营养，比例 1 的食物生熟一样', () => {
   const s = sandbox('2026-11-10T09:00:00Z');
   eq(one(s, '200鸡腿肉'), {name:'鸡腿肉', grams:200, mode:'raw', kcal:260, p:40});
   eq(one(s, '熟150鸡腿肉'), {name:'熟鸡腿肉', grams:150, mode:'cooked', kcal:279, p:42.9}); // 150/0.70=214g 生
-  eq(one(s, '熟200米饭'), {name:'熟大米', grams:200, mode:'cooked', kcal:277, p:5.9});     // 200/2.5=80g 生米
+  eq(one(s, '熟200米饭'), {name:'熟大米', grams:200, mode:'cooked', kcal:315, p:6.7});     // 200/2.2=91g 生米（圆粒米电饭煲）
   eq(one(s, '熟100意大利面'), {name:'熟意大利面', grams:100, mode:'cooked', kcal:152, p:5.2}); // 100/2.3
-  eq(one(s, '熟80菠菜'), {name:'熟菠菜', grams:80, mode:'cooked', kcal:23, p:2.9});          // 80/0.8=100g 生
-  assert.equal(one(s, '熟300土豆').kcal, one(s, '300土豆').kcal);
+  eq(one(s, '熟80菠菜'), {name:'熟菠菜', grams:80, mode:'cooked', kcal:18, p:2.3});          // 菠菜煮进汤 比例1.0
+  assert.equal(one(s, '熟300萝卜').kcal, one(s, '300萝卜').kcal);
+  assert.equal(one(s, '熟92土豆').kcal, one(s, '100土豆').kcal);                   // 土豆 0.92
   // 比例 1 的食物也能切换生/熟，数值不变
   s.run('UI.preview = parseLocal("200牛奶").items;');
   const k = s.run('UI.preview[0].kcal');
@@ -136,10 +137,10 @@ await test('新增食物表单有比例框（默认 1）；快速添加按名称
   assert.equal(s.run('DB.items.find(i=>i.name==="测试苹果").cookRatio'), 1);
 });
 
-await test('预览和已记条目显示另一种重量（熟200g ≈ 生80g）', () => {
+await test('预览和已记条目显示另一种重量（熟200g ≈ 生91g）', () => {
   const s = sandbox('2026-11-10T09:00:00Z');
   s.run('UI.preview = parseLocal("熟200米饭").items; renderToday();');
-  assert.match(s.html('parse-preview'), /≈生80g/);
+  assert.match(s.html('parse-preview'), /≈生91g/);
   s.run('UI.preview = []; logEntries(parseLocal("200鸡腿肉").items, "lunch"); UI.editEntry = dayLog(CUR_DAY)[0].id; renderToday();');
   assert.match(s.html('meal-list'), /≈熟140g/);
   s.run('UI.preview = parseLocal("200牛奶").items; renderToday();');

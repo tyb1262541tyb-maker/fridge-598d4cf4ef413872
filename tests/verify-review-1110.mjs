@@ -166,9 +166,9 @@ await test('5 早/午/晚/加餐每组一张卡片，标题更清楚，无动画
 await test('6 名字带「饭」默认按熟重，写「生」才按生重', () => {
   const s = sandbox('2026-11-10T09:00:00Z');
   const one = q => s.read(`(({name,grams,mode,kcal}) => ({name,grams,mode,kcal}))(parseLocal(${JSON.stringify(q)}).items[0])`);
-  eq(one('200米饭'), {name:'熟大米', grams:200, mode:'cooked', kcal:277});
-  eq(one('米饭200'), {name:'熟大米', grams:200, mode:'cooked', kcal:277});
-  eq(one('熟200米饭'), {name:'熟大米', grams:200, mode:'cooked', kcal:277});
+  eq(one('200米饭'), {name:'熟大米', grams:200, mode:'cooked', kcal:315});
+  eq(one('米饭200'), {name:'熟大米', grams:200, mode:'cooked', kcal:315});
+  eq(one('熟200米饭'), {name:'熟大米', grams:200, mode:'cooked', kcal:315});
   assert.equal(one('生200米饭').mode, 'raw'); assert.equal(one('生200米饭').kcal, 692);
   assert.equal(one('200大米').mode, 'raw');
   const fried = one('300蛋炒饭');
